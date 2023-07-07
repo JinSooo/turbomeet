@@ -61,6 +61,12 @@ io.on('connection', async socket => {
 		leaveRoom(socket)
 	})
 
+	// 获取Router支持的RTP类型
+	socket.on('routerRtpCapabilities', (_, callback) => {
+		const router = worker.appData.routers.get(socket.data.routerId)!
+		callback({ rtpCapabilities: router.rtpCapabilities })
+	})
+
 	// 与客户端连接Transport
 	socket.on('transport', async (data, callback) => {
 		const router = worker.appData.routers.get(socket.data.routerId)!
