@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:https": "local-ssl-proxy --key ./cert/localhost-key.pem --cert ./cert/localhost.pem --source 3001 --target 3000"
   },
   "dependencies": {
     "@types/node": "20.4.0",
@@ -15,6 +16,7 @@
     "autoprefixer": "10.4.14",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
+    "local-ssl-proxy": "^2.0.5",
     "next": "13.4.9",
     "postcss": "8.4.25",
     "react": "18.2.0",
