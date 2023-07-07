@@ -11,6 +11,8 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"fastify": "^4.19.2"
+		"fastify": "^4.19.2",
+		"mediasoup": "^3.12.4",
+		"socket.io": "^4.7.1"
 	}
 }

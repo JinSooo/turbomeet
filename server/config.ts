@@ -49,7 +49,7 @@ const config = {
 					// ip: '127.0.0.1',
 					// '192.168.1.12'是内网IP，不能填0.0.0.0，在本机测试部署的时候也不能填127.0.0.1
 					ip: '192.168.1.12',
-					announcedIp: null,
+					announcedIp: undefined,
 				},
 			],
 			maxIncomingBitrate: 1500000,
