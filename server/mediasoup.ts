@@ -15,11 +15,16 @@ import config from './config.js'
 
 export interface WorkerAppData extends AppData {
 	routers: Map<string, Router<RouterAppData>>
+	transports: Map<string, Transport<TransportAppData>>
+	producers: Map<string, Producer<ProducerAppData>>
+	consumers: Map<string, Consumer<ConsumerAppData>>
 }
 
 export interface RouterAppData extends AppData {
 	worker: Worker
 	transports: Map<string, Transport<TransportAppData>>
+	producers: Map<string, Producer<ProducerAppData>>
+	consumers: Map<string, Consumer<ConsumerAppData>>
 }
 
 export interface TransportAppData extends AppData {
@@ -40,21 +45,27 @@ export const initMediasoup = async () => {
 	// @ts-ignore
 	mediasoup.observer.on('newworker', (worker: Worker<WorkerAppData>) => {
 		worker.appData.routers = new Map()
+		worker.appData.transports = new Map()
+		worker.appData.producers = new Map()
+		worker.appData.consumers = new Map()
 
 		// @ts-ignore
 		worker.observer.on('newrouter', (router: Router<RouterAppData>) => {
 			router.appData.worker = worker
-			router.appData.transports = new Map()
+			router.appData.transports = worker.appData.transports
+			router.appData.producers = worker.appData.producers
+			router.appData.consumers = worker.appData.consumers
 			worker.appData.routers.set(router.id, router)
 
 			router.observer.on('close', () => worker.appData.routers.delete(router.id))
 			// @ts-ignore
 			router.observer.on('newtransport', (transport: Transport<TransportAppData>) => {
 				transport.appData.router = router
-				transport.appData.producers = new Map()
-				transport.appData.consumers = new Map()
+				transport.appData.producers = router.appData.producers
+				transport.appData.consumers = router.appData.consumers
 				router.appData.transports.set(transport.id, transport)
 
+				transport.observer.on('close', () => router.appData.transports.delete(transport.id))
 				// @ts-ignore
 				transport.observer.on('newproducer', (producer: Producer<ProducerAppData>) => {
 					producer.appData.transport = transport

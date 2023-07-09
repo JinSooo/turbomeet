@@ -12,8 +12,7 @@ import {
 	createWorker,
 	initMediasoup,
 } from './mediasoup.js'
-import { initSocketIo } from './socketio.js'
-import { Socket } from 'socket.io'
+import { Server, Socket } from 'socket.io'
 import { Router } from 'mediasoup/node/lib/types.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -32,6 +31,7 @@ interface Peer {
 	socket: Socket
 }
 
+// const MAX_SIZE_PER_ROOM = 10
 const rooms = new Map<string, Room>()
 const peers = new Map<string, Peer>()
 
@@ -49,16 +49,22 @@ const server = Fastify({
 		key: readFileSync(join(__dirname, sslKey)),
 	},
 })
+server.get('/', () => 'TurboMeet')
 await server.listen({ host: listenIp, port: listenPort })
 
 /* -------------------------------- Websocket ------------------------------- */
-const io = initSocketIo(server.server)
+const io = new Server(server.server, {
+	cors: {
+		origin: '*',
+	},
+})
 
 io.on('connection', async socket => {
-	joinRoom(socket)
+	await joinRoom(socket)
+	console.log(rooms.keys(), peers.keys())
 
-	socket.on('disconnection', socket => {
-		leaveRoom(socket)
+	socket.on('disconnect', async () => {
+		await leaveRoom(socket)
 	})
 
 	// 获取Router支持的RTP类型
@@ -90,21 +96,22 @@ io.on('connection', async socket => {
 
 	// 客户端将媒体注入到mediasoup，即指示路由器接收音视频RTP
 	socket.on('produce', async (data, callback) => {
-		const router = worker.appData.routers.get(socket.data.routerId)!
-		const transport = router.appData.transports.get(data.transportId)!
+		const transport = worker.appData.transports.get(data.transportId)!
 		const producer = await createProducer(transport, data)
 		callback({
 			producerId: producer.id,
 		})
 		// 通知房间内的其他成员连接Producer
-		socket.to(socket.data.roomId).emit('newProducer', { producerId: producer.id })
+		socket
+			.to(socket.data.roomId)
+			.emit('newProducer', { peerId: socket.data.peerId, producerId: producer.id, kind: producer.kind })
 	})
 
 	// 从mediasoup提取媒体到客户端，即指示路由器发送音视频RTP
 	socket.on('consume', async (data, callback) => {
 		const router = worker.appData.routers.get(socket.data.routerId)!
-		const transport = router.appData.transports.get(data.transportId)!
-		const producer = transport.appData.producers.get(data.producerId)!
+		const transport = worker.appData.transports.get(data.transportId)!
+		const producer = worker.appData.producers.get(data.producerId)!
 		const consumer = await createConsumer(router, transport, producer, data)
 		if (!consumer) {
 			callback()
@@ -118,6 +125,12 @@ io.on('connection', async socket => {
 			rtpParameters: consumer.rtpParameters,
 			producerPaused: consumer.producerPaused,
 		})
+	})
+
+	socket.on('resume', async (data, callback) => {
+		const consumer = worker.appData.consumers.get(data.consumerId)!
+		await consumer.resume()
+		callback()
 	})
 })
 
@@ -145,6 +158,7 @@ const joinRoom = async (socket: Socket) => {
 		socket,
 		id: peerId,
 	}
+	peers.set(peerId, peer)
 	const room = await getOrCreateRoom(roomId)
 	room.peers.push(peerId)
 	// 在socket上绑定一个房间号（一个socket对应一个room）
@@ -194,6 +208,7 @@ const getOrCreateRoom = async (roomId: string) => {
 			id: roomId,
 			peers: [],
 		}
+		rooms.set(roomId, room)
 	}
 
 	return room
