@@ -6,9 +6,9 @@ import * as mediasoup from 'mediasoup-client'
 import { MediaType } from '@/types'
 import { Consumer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
-import Media from './Exhibition/RemoteMedia'
 import LocalMedia from './Exhibition/LocalMedia'
 import { useToast } from '@chakra-ui/react'
+import RemoteMedia from './Exhibition/RemoteMedia'
 
 interface PeerInfo {
 	id: string
@@ -31,11 +31,11 @@ let count = 0
 const room = new Map<string, PeerInfo>()
 
 const Room = () => {
-  const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
+	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
 	const peerId = roomId + '-' + username
 	const toast = useToast({ position: 'bottom-right' })
-	// 不包括自己
-	const [memberCount, setMemberCount] = useState(0)
+	// 所有远程Peer的ID，用于渲染Media音视频
+	const [peersMedia, setPeersMedia] = useState<string[]>([])
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -178,7 +178,7 @@ const Room = () => {
 		})
 		let peer = room.get(peerId)
 		if (!peer) {
-			peer = { id: peerId, stream: new MediaStream(), producers: {}, videoId: `#remoteMedia-${count++}` }
+			peer = { id: peerId, stream: new MediaStream(), producers: {}, videoId: `#remoteMedia-${peerId}` }
 			room.set(peerId, peer)
 		}
 		peer.producers![data.kind] = {
@@ -189,15 +189,15 @@ const Room = () => {
 		// return stream
 		;(document.querySelector(peer.videoId) as HTMLVideoElement).srcObject = peer.stream
 		await socket.request('resume', { consumerId: consumer.id })
-
-		console.log(room)
 	}
 	// 同步房间内其他用户的音视频
 	const synchronizePeers = async () => {
-		const { peers } = await socket.request('synchronizePeers', { roomId })
-		setMemberCount(peers.length - 1)
+		let { peers } = await socket.request('synchronizePeers', { roomId })
+		// @ts-ignore
+		peers = peers.filter(peer => peer.peerId !== peerId)
+		// @ts-ignore
+		setPeersMedia(peers.map(peer => peer.peerId))
 		for (const peer of peers) {
-			if (peer.peerId === peerId) continue
 			for (const producerId of peer.producers) {
 				subscribe(peer.peerId, producerId)
 			}
@@ -233,11 +233,14 @@ const Room = () => {
 			})
 			socket.on('userLeave', async data => {
 				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
+				// 离开则删除用户，移除Media
+				setPeersMedia(peersMedia => peersMedia.filter(peerId => peerId !== data.peerId))
 			})
 			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {
 				if (!room.has(data.peerId)) {
-					setMemberCount(memberCount => memberCount + 1)
+					// 添加用户，增添一个新的Media
+					setPeersMedia(peersMedia => [...peersMedia, data.peerId])
 				}
 				subscribe(data.peerId, data.producerId)
 			})
@@ -262,10 +265,10 @@ const Room = () => {
 				{/* <Exhibition /> */}
 				<div className="flex justify-center items-center flex-wrap gap-8 w-full h-full">
 					<LocalMedia id="localMedia" mediaType={mediaType} username={username} />
-					{new Array(memberCount).fill(null).map((_, index) => (
-						<Media id={`remoteMedia-${index}`} key={`remoteMedia-${index}`} username={'remote'} />
-					))}
 					{/* <Media /> */}
+					{peersMedia.map(peerId => (
+						<RemoteMedia id={`remoteMedia-${peerId}`} key={`remoteMedia-${peerId}`} username={'remote'} />
+					))}
 				</div>
 			</div>
 			<div className="w-72">
