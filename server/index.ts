@@ -127,6 +127,7 @@ io.on('connection', async socket => {
 		})
 	})
 
+	// 播放video
 	socket.on('resume', async (data, callback) => {
 		const consumer = worker.appData.consumers.get(data.consumerId)!
 		await consumer.resume()
@@ -169,10 +170,7 @@ const joinRoom = async (socket: Socket) => {
 	socket.data.routerId = room.router.id
 
 	// connectTransport(room.router)
-	// client端获取到routerid，以便后续进行具体操作
-	socket.emit('routerId', {
-		routerId: room.router.id,
-	})
+	socket.emit('userJoin', { username: peerId.split('-')[1] })
 }
 
 /**
@@ -189,6 +187,8 @@ const leaveRoom = async (socket: Socket) => {
 		rooms.delete(roomId)
 	}
 	peers.delete(peerId)
+
+	socket.to(roomId).emit('userLeave', { peerId })
 }
 
 /**

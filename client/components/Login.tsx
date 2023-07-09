@@ -19,7 +19,7 @@ const Login = ({ login }: Props) => {
 		state => [state.setUsername, state.setRoomId, state.setMediaType],
 		shallow,
 	)
-	const toast = useToast({ position: 'top' })
+	const toast = useToast({ position: 'bottom-right' })
 	const [mediaType, setMediaType] = useState(MediaType.ALL)
 	const [roomId, setRoomId] = useState(initialRoomId)
 	const [username, setUsername] = useState('')

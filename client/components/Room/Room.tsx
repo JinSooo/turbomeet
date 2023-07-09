@@ -8,6 +8,7 @@ import { Consumer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
 import Media from './Exhibition/RemoteMedia'
 import LocalMedia from './Exhibition/LocalMedia'
+import { useToast } from '@chakra-ui/react'
 
 interface PeerInfo {
 	id: string
@@ -31,6 +32,7 @@ const room = new Map<string, PeerInfo>()
 
 const Room = () => {
 	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
+	const toast = useToast({ position: 'bottom-right' })
 	// 不包括自己
 	const [memberCount, setMemberCount] = useState(0)
 
@@ -201,6 +203,24 @@ const Room = () => {
 			await loadDevice()
 			await initTransport()
 			await publish(mediaType)
+
+			socket.on('disconnection', reason => {
+				if (reason === 'io server disconnect') {
+					// 断线是由服务器发起的，重新连接。
+					socket.connect()
+				} else {
+					toast({ status: 'error', description: 'You are disconnected' })
+				}
+			})
+			socket.on('error', async data => {
+				toast({ status: 'error', description: `Error: ${data}` })
+			})
+			socket.on('userJoin', async data => {
+				toast({ status: 'info', description: `User ${data.username} join the room` })
+			})
+			socket.on('userLeave', async data => {
+				toast({ status: 'warning', description: `User ${data.username} leave the room` })
+			})
 
 			socket.on('newProducer', data => {
 				if (!room.has(data.peerId)) {
