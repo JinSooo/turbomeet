@@ -31,7 +31,8 @@ let count = 0
 const room = new Map<string, PeerInfo>()
 
 const Room = () => {
-	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
+  const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
+	const peerId = roomId + '-' + username
 	const toast = useToast({ position: 'bottom-right' })
 	// 不包括自己
 	const [memberCount, setMemberCount] = useState(0)
@@ -163,7 +164,7 @@ const Room = () => {
 		;(document.querySelector('#localMedia') as HTMLVideoElement).srcObject = stream
 	}
 	// 从mediasoup服务器订阅获取流媒体
-	const subscribe = async (peerId: string, producerId: string, kind: string) => {
+	const subscribe = async (peerId: string, producerId: string) => {
 		const data = await socket.request('consume', {
 			producerId,
 			transportId: consumerTransport.id,
@@ -180,7 +181,7 @@ const Room = () => {
 			peer = { id: peerId, stream: new MediaStream(), producers: {}, videoId: `#remoteMedia-${count++}` }
 			room.set(peerId, peer)
 		}
-		peer.producers![kind] = {
+		peer.producers![data.kind] = {
 			producerId,
 			consumer,
 		}
@@ -191,18 +192,30 @@ const Room = () => {
 
 		console.log(room)
 	}
+	// 同步房间内其他用户的音视频
+	const synchronizePeers = async () => {
+		const { peers } = await socket.request('synchronizePeers', { roomId })
+		setMemberCount(peers.length - 1)
+		for (const peer of peers) {
+			if (peer.peerId === peerId) continue
+			for (const producerId of peer.producers) {
+				subscribe(peer.peerId, producerId)
+			}
+		}
+	}
 
 	const initWebSocket = () => {
 		socket = io('https://192.168.1.12:8080/', {
 			query: {
 				roomId,
-				peerId: roomId + '-' + username,
+				peerId,
 			},
 		})
 		socket.on('connect', async () => {
 			await loadDevice()
 			await initTransport()
 			await publish(mediaType)
+			await synchronizePeers()
 
 			socket.on('disconnection', reason => {
 				if (reason === 'io server disconnect') {
@@ -216,17 +229,17 @@ const Room = () => {
 				toast({ status: 'error', description: `Error: ${data}` })
 			})
 			socket.on('userJoin', async data => {
-				toast({ status: 'info', description: `User ${data.username} join the room` })
+				toast({ status: 'info', description: `User ${data.peerId.split('-')[1]} join the room` })
 			})
 			socket.on('userLeave', async data => {
-				toast({ status: 'warning', description: `User ${data.username} leave the room` })
+				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
 			})
-
+			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {
 				if (!room.has(data.peerId)) {
 					setMemberCount(memberCount => memberCount + 1)
 				}
-				subscribe(data.peerId, data.producerId, data.kind)
+				subscribe(data.peerId, data.producerId)
 			})
 		})
 

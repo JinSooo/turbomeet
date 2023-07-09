@@ -29,6 +29,8 @@ interface Peer {
 	id: string
 	roomId: string
 	socket: Socket
+	// 存放对应peer的producer
+	producers: string[]
 }
 
 // const MAX_SIZE_PER_ROOM = 10
@@ -66,6 +68,11 @@ io.on('connection', async socket => {
 	socket.on('disconnect', async () => {
 		await leaveRoom(socket)
 	})
+	socket.on('synchronizePeers', (data, callback) => {
+		// 同步房间内其他用户信息
+		const roomPeers = synchronizePeers(data.roomId)
+		callback({ peers: roomPeers })
+	})
 
 	// 获取Router支持的RTP类型
 	socket.on('routerRtpCapabilities', (_, callback) => {
@@ -101,6 +108,10 @@ io.on('connection', async socket => {
 		callback({
 			producerId: producer.id,
 		})
+
+		// 同步到peer上
+		const peer = peers.get(socket.data.peerId)!
+		peer.producers.push(producer.id)
 		// 通知房间内的其他成员连接Producer
 		socket
 			.to(socket.data.roomId)
@@ -154,23 +165,22 @@ const joinRoom = async (socket: Socket) => {
 		socket.disconnect(true)
 		return
 	}
+
+	const room = await getOrCreateRoom(roomId)
 	peer = {
 		roomId,
 		socket,
 		id: peerId,
+		producers: [],
 	}
 	peers.set(peerId, peer)
-	const room = await getOrCreateRoom(roomId)
 	room.peers.push(peerId)
-	// 在socket上绑定一个房间号（一个socket对应一个room）
-	// socket.rooms
 	socket.join(roomId)
 	socket.data.peerId = peerId
 	socket.data.roomId = roomId
 	socket.data.routerId = room.router.id
 
-	// connectTransport(room.router)
-	socket.emit('userJoin', { username: peerId.split('-')[1] })
+	socket.to(roomId).emit('userJoin', { peerId })
 }
 
 /**
@@ -212,4 +222,25 @@ const getOrCreateRoom = async (roomId: string) => {
 	}
 
 	return room
+}
+
+/**
+ * 同步房间内其他用户的音视频
+ */
+const synchronizePeers = (roomId: string) => {
+	const roomPeers = rooms.get(roomId)!.peers
+	const data: {
+		peerId: string
+		producers: string[]
+	}[] = []
+
+	for (const peerId of roomPeers) {
+		const peer = peers.get(peerId)!
+		data.push({
+			peerId: peer.id,
+			producers: peer.producers,
+		})
+	}
+
+	return data
 }
