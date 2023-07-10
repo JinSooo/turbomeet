@@ -169,14 +169,14 @@ const Room = () => {
 		// 根据配置关闭对应的流
 		switch (type) {
 			case MediaType.FORBID:
-				controlMedia('pause', audioProducer.id)
-				controlMedia('pause', videoProducer.id)
+				controlProducer('pause', audioProducer.id)
+				controlProducer('pause', videoProducer.id)
 				break
 			case MediaType.AUDIO:
-				controlMedia('pause', videoProducer.id)
+				controlProducer('pause', videoProducer.id)
 				break
 			case MediaType.VIDEO:
-				controlMedia('pause', audioProducer.id)
+				controlProducer('pause', audioProducer.id)
 				break
 			case MediaType.ALL:
 				break
@@ -197,6 +197,9 @@ const Room = () => {
 			kind: data.kind,
 			rtpParameters: data.rtpParameters,
 		})
+		/**
+		 * TODO: 每次都添加一次Peer的方式不行，但目前无法获取到准确的peers，所以只能先在addPeer中处理逻辑了
+		 */
 		// 添加Peer，如果存在则忽略
 		addPeer(peerId)
 		addPeerConsumer(peerId, consumer.id)
@@ -211,7 +214,7 @@ const Room = () => {
 		})
 		consumers.set(consumer.id, consumer)
 
-		// 播放视频，默认先暂停
+		// 客户端接收到consumer之后，就可以通知服务器恢复了
 		await socket.request('resume', { consumerId: consumer.id })
 	}
 	// 同步房间内其他用户的音视频
@@ -226,8 +229,8 @@ const Room = () => {
 		}
 	}
 	// 控制Producer流媒体的开关
-	const controlMedia = async (type: 'pause' | 'resume', mediaId: string) => {
-		const producer = producers.get(mediaId)!
+	const controlProducer = async (type: 'pause' | 'resume', producerId: string) => {
+		const producer = producers.get(producerId)!
 
 		switch (type) {
 			case 'pause':
@@ -299,7 +302,7 @@ const Room = () => {
 	return (
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
-				<Exhibition mediaType={mediaType} me={me} peers={peers} controlMedia={controlMedia} />
+				<Exhibition mediaType={mediaType} me={me} peers={peers} controlProducer={controlProducer} />
 			</div>
 			<div className="w-72">
 				<Chat />

@@ -6,18 +6,13 @@ import { useState } from 'react'
 interface Props {
 	mediaType: MediaType
 	me: Me
-	controlMedia: (type: 'pause' | 'resume', media: string) => Promise<void>
+	controlProducer: (type: 'pause' | 'resume', producerId: string) => Promise<void>
 }
 
-const LocalMedia = ({ mediaType, me, controlMedia }: Props) => {
+const LocalMedia = ({ mediaType, me, controlProducer }: Props) => {
 	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
 	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
 	const [hasShare, setHasShare] = useState(false)
-
-	// const audioEnabled = !selfMedia.producers?.audio.paused
-	// const videoEnabled = !selfMedia.producers?.video.paused
-	// console.log(audioEnabled, videoEnabled)
-
 	const styles = {
 		audioColorScheme: hasAudio ? 'teal' : 'gray',
 		audioImg: hasAudio ? '/img/audio.svg' : '/img/audio_forbid.svg',
@@ -25,15 +20,14 @@ const LocalMedia = ({ mediaType, me, controlMedia }: Props) => {
 		videoImg: hasVideo ? '/img/video.svg' : '/img/video_forbid.svg',
 		shareColorScheme: hasShare ? 'teal' : 'gray',
 		shareImg: '/img/share.svg',
-		isShowVideo: mediaType === MediaType.FORBID ? false : true,
 	}
 
 	const handleAudio = () => {
-		// controlMedia(!hasAudio ? 'resume' : 'pause', selfMedia.producers?.audio!)
+		controlProducer(!hasAudio ? 'resume' : 'pause', me.producers.audio)
 		setHasAudio(!hasAudio)
 	}
 	const handleVideo = () => {
-		// controlMedia(!hasVideo ? 'resume' : 'pause', selfMedia.producers?.video!)
+		controlProducer(!hasVideo ? 'resume' : 'pause', me.producers.video)
 		setHasVideo(!hasVideo)
 	}
 	const handleShare = () => setHasShare(!hasShare)
@@ -46,14 +40,14 @@ const LocalMedia = ({ mediaType, me, controlMedia }: Props) => {
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div
-				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none ${
-					styles.isShowVideo ? 'z-[-1]' : ''
+				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none  bg-[rgba(49,49,49,0.9)] ${
+					hasVideo ? 'z-[-1]' : 'z-10'
 				}`}
 			>
 				<Image src={'/img/avatar.svg'} alt="avatar" width={250} height={250} />
 			</div>
 			{/* 控制区 */}
-			<div className="absolute flex flex-col gap-2 right-2 top-14">
+			<div className="absolute flex flex-col gap-2 right-2 top-14 z-50">
 				<Button className="w-[50px] h-[50px] rounded-full" colorScheme={styles.audioColorScheme} onClick={handleAudio}>
 					<Image src={styles.audioImg} alt="forbid" width={18} height={18} />
 				</Button>
@@ -65,7 +59,7 @@ const LocalMedia = ({ mediaType, me, controlMedia }: Props) => {
 				</Button>
 			</div>
 			{/* 用户名 */}
-			<div className="absolute bottom-2 left-2 bg-[#252525] text-white border-b-2 border-b-[#aeff00] select-none text-sm p-[4.8px]">
+			<div className="absolute bottom-2 left-2 bg-[#252525] text-white border-b-2 border-b-[#aeff00] select-none text-sm p-[4.8px] z-50">
 				<p>{me.username}</p>
 			</div>
 		</div>

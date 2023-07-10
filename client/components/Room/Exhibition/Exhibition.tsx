@@ -8,13 +8,13 @@ interface Props {
 	peers: {
 		[key: string]: Peer
 	}
-	controlMedia: (type: 'pause' | 'resume', media: string) => Promise<void>
+	controlProducer: (type: 'pause' | 'resume', producerId: string) => Promise<void>
 }
 
-const Exhibition = ({ mediaType, me, peers, controlMedia }: Props) => {
+const Exhibition = ({ mediaType, me, peers, controlProducer }: Props) => {
 	return (
 		<div className="flex justify-center items-center flex-wrap gap-8 w-full h-full">
-			<LocalMedia mediaType={mediaType} me={me} controlMedia={controlMedia} />
+			<LocalMedia mediaType={mediaType} me={me} controlProducer={controlProducer} />
 			{/* <Media /> */}
 			{Object.values(peers).map(peer => (
 				<RemoteMedia key={`remoteMedia-${peer.id}`} peer={peer} />
