@@ -6,9 +6,7 @@ import * as mediasoup from 'mediasoup-client'
 import { MediaType } from '@/types'
 import { Consumer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
-import LocalMedia from './Exhibition/LocalMedia'
 import { useToast } from '@chakra-ui/react'
-import RemoteMedia from './Exhibition/RemoteMedia'
 
 interface PeerInfo {
 	id: string
@@ -122,6 +120,8 @@ const Room = () => {
 	}
 	// 向mediasoup服务器传输流媒体
 	const publish = async (type: MediaType) => {
+		if (type === MediaType.FORBID) return
+
 		let constraint = undefined
 		switch (type) {
 			case MediaType.AUDIO:
@@ -153,7 +153,8 @@ const Room = () => {
 				await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 				break
 			case MediaType.VIDEO:
-				await producerTransport.produce({ track: stream.getVideoTracks()[0] })
+				const producer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
+				console.log(producer)
 				break
 			case MediaType.ALL:
 				await producerTransport.produce({ track: stream.getAudioTracks()[0] })
@@ -262,14 +263,7 @@ const Room = () => {
 	return (
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
-				{/* <Exhibition /> */}
-				<div className="flex justify-center items-center flex-wrap gap-8 w-full h-full">
-					<LocalMedia id="localMedia" mediaType={mediaType} username={username} />
-					{/* <Media /> */}
-					{peersMedia.map(peerId => (
-						<RemoteMedia id={`remoteMedia-${peerId}`} key={`remoteMedia-${peerId}`} username={'remote'} />
-					))}
-				</div>
+				<Exhibition username={username} mediaType={mediaType} peersMedia={peersMedia} />
 			</div>
 			<div className="w-72">
 				<Chat />

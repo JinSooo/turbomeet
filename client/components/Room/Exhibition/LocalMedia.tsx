@@ -32,11 +32,15 @@ const LocalMedia = ({ id, mediaType, username }: Props) => {
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
 			{/* 音视频 */}
 			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
-				{styles.isShowVideo ? (
-					<video id={id} playsInline autoPlay className="h-full object-fill" muted />
-				) : (
-					<Image src={'/img/avatar.svg'} alt="avatar" width={250} height={250} />
-				)}
+				<video id={id} playsInline autoPlay className="h-full object-fill" muted />
+			</div>
+			{/* 如果没开视频时，显示头像 */}
+			<div
+				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none ${
+					styles.isShowVideo ? 'z-[-1]' : ''
+				}`}
+			>
+				<Image src={'/img/avatar.svg'} alt="avatar" width={250} height={250} />
 			</div>
 			{/* 控制区 */}
 			<div className="absolute flex flex-col gap-2 right-2 top-14">
