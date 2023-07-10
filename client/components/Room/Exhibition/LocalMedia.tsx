@@ -2,16 +2,19 @@ import { MediaType } from '@/types'
 import { Button } from '@chakra-ui/react'
 import Image from 'next/image'
 import { useState } from 'react'
+import { SelfInfo } from '../Room'
+import { Producer } from 'mediasoup-client/lib/Producer'
 
 interface Props {
 	id: string
 	mediaType: MediaType
-	username: string
+	selfMedia: SelfInfo
+	controlMedia: (type: 'pause' | 'resume', media: Producer) => Promise<void>
 }
 
-const LocalMedia = ({ id, mediaType, username }: Props) => {
-	const [hasAudio, setHasAudio] = useState(true)
-	const [hasVideo, setHasVideo] = useState(true)
+const LocalMedia = ({ id, mediaType, selfMedia, controlMedia }: Props) => {
+	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
+	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
 	const [hasShare, setHasShare] = useState(false)
 
 	const styles = {
@@ -24,8 +27,14 @@ const LocalMedia = ({ id, mediaType, username }: Props) => {
 		isShowVideo: mediaType === MediaType.FORBID ? false : true,
 	}
 
-	const handleAudio = () => setHasAudio(!hasAudio)
-	const handleVideo = () => setHasVideo(!hasVideo)
+	const handleAudio = () => {
+		controlMedia(!hasAudio ? 'resume' : 'pause', selfMedia.producers?.audio!)
+		setHasAudio(!hasAudio)
+	}
+	const handleVideo = () => {
+		controlMedia(!hasVideo ? 'resume' : 'pause', selfMedia.producers?.video!)
+		setHasVideo(!hasVideo)
+	}
 	const handleShare = () => setHasShare(!hasShare)
 
 	return (
@@ -56,7 +65,7 @@ const LocalMedia = ({ id, mediaType, username }: Props) => {
 			</div>
 			{/* 用户名 */}
 			<div className="absolute bottom-2 left-2 bg-[#252525] text-white border-b-2 border-b-[#aeff00] select-none text-sm p-[4.8px]">
-				<p>{username}</p>
+				<p>{selfMedia.id.split('-')[1]}</p>
 			</div>
 		</div>
 	)

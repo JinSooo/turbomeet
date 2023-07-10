@@ -8,22 +8,22 @@ import { Consumer, Producer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 
-interface PeerInfo {
+export interface PeerInfo {
 	id: string
 	stream: MediaStream
 	producers?: {
 		[key: string]: {
 			producerId: string
-			consumer?: Consumer
+			consumer: Consumer
 		}
 	}
 	videoId: string
 }
 
-interface SelfInfo {
+export interface SelfInfo {
 	id: string
-	stream: MediaStream
-	producers: {
+	stream?: MediaStream
+	producers?: {
 		[key: string]: Producer
 	}
 }
@@ -34,8 +34,6 @@ let producerTransport: Transport
 let consumerTransport: Transport
 // 成员流媒体列表
 const room = new Map<string, PeerInfo>()
-// 个人
-let self: SelfInfo
 
 const Room = () => {
 	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
@@ -43,6 +41,9 @@ const Room = () => {
 	const toast = useToast({ position: 'bottom-right' })
 	// 所有远程Peer的ID，用于渲染Media音视频
 	const [peersMedia, setPeersMedia] = useState<string[]>([])
+	const [selfMedia, setSelfMedia] = useState<SelfInfo>({
+		id: peerId,
+	})
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -140,14 +141,14 @@ const Room = () => {
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 		// 添加到房间记录内
-		self = {
+		setSelfMedia({
 			stream,
 			id: peerId,
 			producers: {
 				audio: audioProducer,
 				video: videoProducer,
 			},
-		}
+		})
 
 		// 根据配置关闭对应的流
 		switch (type) {
@@ -194,6 +195,7 @@ const Room = () => {
 		// return stream
 		;(document.querySelector(peer.videoId) as HTMLVideoElement).srcObject = peer.stream
 		await socket.request('resume', { consumerId: consumer.id })
+		console.log(room)
 	}
 	// 同步房间内其他用户的音视频
 	const synchronizePeers = async () => {
@@ -212,11 +214,11 @@ const Room = () => {
 	const controlMedia = async (type: 'pause' | 'resume', media: Producer) => {
 		switch (type) {
 			case 'pause':
-				await socket.request('producerPause', { producerId: media.id })
+				await socket.request('producerPause', media.id)
 				media.pause()
 				break
 			case 'resume':
-				await socket.request('producerResume', { producerId: media.id })
+				await socket.request('producerResume', media.id)
 				media.resume()
 				break
 		}
@@ -253,6 +255,10 @@ const Room = () => {
 				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
 				// 离开则删除用户，移除Media
 				setPeersMedia(peersMedia => peersMedia.filter(peerId => peerId !== data.peerId))
+				// const peer = room.get(data.peerId)!
+				// !peer.producers!.audio?.consumer?.closed && peer.producers!.audio?.consumer?.close()
+				// !peer.producers!.video?.consumer?.closed && peer.producers!.video?.consumer?.close()
+				// room.delete(data.peerId)
 			})
 			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {
@@ -280,7 +286,7 @@ const Room = () => {
 	return (
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
-				<Exhibition username={username} mediaType={mediaType} peersMedia={peersMedia} />
+				<Exhibition selfMedia={selfMedia} mediaType={mediaType} peersMedia={peersMedia} controlMedia={controlMedia} />
 			</div>
 			<div className="w-72">
 				<Chat />
