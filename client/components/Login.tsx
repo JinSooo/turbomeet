@@ -1,5 +1,6 @@
 'use client'
 
+import useMediasoupStore from '@/store/mediasoup'
 import useUserStore from '@/store/user'
 import { MediaType } from '@/types'
 import { Button, ButtonGroup, Card, CardBody, CardHeader, Heading, Input, Text, useToast } from '@chakra-ui/react'
@@ -19,6 +20,7 @@ const Login = ({ login }: Props) => {
 		state => [state.setUsername, state.setRoomId, state.setMediaType],
 		shallow,
 	)
+	const [setMeId, setMeUsername] = useMediasoupStore(state => [state.setMeId, state.setMeUsername])
 	const toast = useToast({ position: 'bottom-right' })
 	const [mediaType, setMediaType] = useState(MediaType.ALL)
 	const [roomId, setRoomId] = useState(initialRoomId)
@@ -34,6 +36,8 @@ const Login = ({ login }: Props) => {
 		setStoreUsername(username)
 		setStoreRoomId(roomId)
 		setGlobalMediaType(mediaType)
+		setMeId(roomId + '-' + username)
+		setMeUsername(username)
 		toast({ status: 'success', description: 'join' })
 		login()
 	}

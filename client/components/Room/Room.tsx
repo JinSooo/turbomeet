@@ -7,6 +7,7 @@ import { MediaType } from '@/types'
 import { Consumer, Producer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
+import useMediasoupStore from '@/store/mediasoup'
 
 export interface PeerInfo {
 	id: string
@@ -34,16 +35,24 @@ let producerTransport: Transport
 let consumerTransport: Transport
 // 成员流媒体列表
 const room = new Map<string, PeerInfo>()
+const producers = new Map<string, Producer>()
+const consumers = new Map<string, Consumer>()
 
 const Room = () => {
-	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
-	const peerId = roomId + '-' + username
+	const [roomId, mediaType] = useUserStore(state => [state.roomId, state.mediaType])
+	const [me, peers, setMeProducers, addPeer, removePeer, addPeerConsumer, addProducer, addConsumer] = useMediasoupStore(
+		state => [
+			state.me,
+			state.peers,
+			state.setMeProducers,
+			state.addPeer,
+			state.removePeer,
+			state.addPeerConsumer,
+			state.addProducer,
+			state.addConsumer,
+		],
+	)
 	const toast = useToast({ position: 'bottom-right' })
-	// 所有远程Peer的ID，用于渲染Media音视频
-	const [peersMedia, setPeersMedia] = useState<string[]>([])
-	const [selfMedia, setSelfMedia] = useState<SelfInfo>({
-		id: peerId,
-	})
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -140,33 +149,39 @@ const Room = () => {
 		})
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
-		// 添加到房间记录内
-		setSelfMedia({
-			stream,
-			id: peerId,
-			producers: {
-				audio: audioProducer,
-				video: videoProducer,
+
+		setMeProducers({ audio: audioProducer.id, video: videoProducer.id })
+		addProducer({
+			[audioProducer.id]: {
+				id: audioProducer.id,
+				track: audioProducer.track,
+				paused: audioProducer.paused,
+			},
+			[videoProducer.id]: {
+				id: videoProducer.id,
+				track: videoProducer.track,
+				paused: videoProducer.paused,
 			},
 		})
+		producers.set(audioProducer.id, audioProducer)
+		producers.set(videoProducer.id, videoProducer)
 
 		// 根据配置关闭对应的流
 		switch (type) {
 			case MediaType.FORBID:
-				controlMedia('pause', audioProducer)
-				controlMedia('pause', videoProducer)
+				controlMedia('pause', audioProducer.id)
+				controlMedia('pause', videoProducer.id)
 				break
 			case MediaType.AUDIO:
-				controlMedia('pause', videoProducer)
+				controlMedia('pause', videoProducer.id)
 				break
 			case MediaType.VIDEO:
-				controlMedia('pause', audioProducer)
+				controlMedia('pause', audioProducer.id)
 				break
 			case MediaType.ALL:
 				break
 		}
 
-		// return stream
 		;(document.querySelector('#localMedia') as HTMLVideoElement).srcObject = stream
 	}
 	// 从mediasoup服务器订阅获取流媒体
@@ -182,28 +197,28 @@ const Room = () => {
 			kind: data.kind,
 			rtpParameters: data.rtpParameters,
 		})
-		let peer = room.get(peerId)
-		if (!peer) {
-			peer = { id: peerId, stream: new MediaStream(), producers: {}, videoId: `#remoteMedia-${peerId}` }
-			room.set(peerId, peer)
-		}
-		peer.producers![data.kind] = {
-			producerId,
-			consumer,
-		}
-		peer.stream.addTrack(consumer.track)
-		// return stream
-		;(document.querySelector(peer.videoId) as HTMLVideoElement).srcObject = peer.stream
+		// 添加Peer，如果存在则忽略
+		addPeer(peerId)
+		addPeerConsumer(peerId, consumer.id)
+		addConsumer({
+			[consumer.id]: {
+				id: consumer.id,
+				kind: consumer.kind,
+				pausedLocally: false,
+				pausedRemotely: consumer.paused,
+				track: consumer.track,
+			},
+		})
+		consumers.set(consumer.id, consumer)
+
+		// 播放视频，默认先暂停
 		await socket.request('resume', { consumerId: consumer.id })
-		console.log(room)
 	}
 	// 同步房间内其他用户的音视频
 	const synchronizePeers = async () => {
 		let { peers } = await socket.request('synchronizePeers', { roomId })
 		// @ts-ignore
-		peers = peers.filter(peer => peer.peerId !== peerId)
-		// @ts-ignore
-		setPeersMedia(peers.map(peer => peer.peerId))
+		peers = peers.filter(peer => peer.peerId !== me.id)
 		for (const peer of peers) {
 			for (const producerId of peer.producers) {
 				subscribe(peer.peerId, producerId)
@@ -211,15 +226,17 @@ const Room = () => {
 		}
 	}
 	// 控制Producer流媒体的开关
-	const controlMedia = async (type: 'pause' | 'resume', media: Producer) => {
+	const controlMedia = async (type: 'pause' | 'resume', mediaId: string) => {
+		const producer = producers.get(mediaId)!
+
 		switch (type) {
 			case 'pause':
-				await socket.request('producerPause', media.id)
-				media.pause()
+				await socket.request('producerPause', producer.id)
+				producer.pause()
 				break
 			case 'resume':
-				await socket.request('producerResume', media.id)
-				media.resume()
+				await socket.request('producerResume', producer.id)
+				producer.resume()
 				break
 		}
 	}
@@ -228,7 +245,7 @@ const Room = () => {
 		socket = io('https://192.168.1.12:8080/', {
 			query: {
 				roomId,
-				peerId,
+				peerId: me.id,
 			},
 		})
 		socket.on('connect', async () => {
@@ -254,7 +271,7 @@ const Room = () => {
 			socket.on('userLeave', async data => {
 				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
 				// 离开则删除用户，移除Media
-				setPeersMedia(peersMedia => peersMedia.filter(peerId => peerId !== data.peerId))
+				removePeer(data.peerId)
 				// const peer = room.get(data.peerId)!
 				// !peer.producers!.audio?.consumer?.closed && peer.producers!.audio?.consumer?.close()
 				// !peer.producers!.video?.consumer?.closed && peer.producers!.video?.consumer?.close()
@@ -262,10 +279,6 @@ const Room = () => {
 			})
 			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {
-				if (!room.has(data.peerId)) {
-					// 添加用户，增添一个新的Media
-					setPeersMedia(peersMedia => [...peersMedia, data.peerId])
-				}
 				subscribe(data.peerId, data.producerId)
 			})
 		})
@@ -286,7 +299,7 @@ const Room = () => {
 	return (
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
-				<Exhibition selfMedia={selfMedia} mediaType={mediaType} peersMedia={peersMedia} controlMedia={controlMedia} />
+				<Exhibition mediaType={mediaType} me={me} peers={peers} controlMedia={controlMedia} />
 			</div>
 			<div className="w-72">
 				<Chat />

@@ -1,21 +1,22 @@
-import { MediaType } from '@/types'
+import { Me, MediaType } from '@/types'
 import { Button } from '@chakra-ui/react'
 import Image from 'next/image'
 import { useState } from 'react'
-import { SelfInfo } from '../Room'
-import { Producer } from 'mediasoup-client/lib/Producer'
 
 interface Props {
-	id: string
 	mediaType: MediaType
-	selfMedia: SelfInfo
-	controlMedia: (type: 'pause' | 'resume', media: Producer) => Promise<void>
+	me: Me
+	controlMedia: (type: 'pause' | 'resume', media: string) => Promise<void>
 }
 
-const LocalMedia = ({ id, mediaType, selfMedia, controlMedia }: Props) => {
+const LocalMedia = ({ mediaType, me, controlMedia }: Props) => {
 	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
 	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
 	const [hasShare, setHasShare] = useState(false)
+
+	// const audioEnabled = !selfMedia.producers?.audio.paused
+	// const videoEnabled = !selfMedia.producers?.video.paused
+	// console.log(audioEnabled, videoEnabled)
 
 	const styles = {
 		audioColorScheme: hasAudio ? 'teal' : 'gray',
@@ -28,11 +29,11 @@ const LocalMedia = ({ id, mediaType, selfMedia, controlMedia }: Props) => {
 	}
 
 	const handleAudio = () => {
-		controlMedia(!hasAudio ? 'resume' : 'pause', selfMedia.producers?.audio!)
+		// controlMedia(!hasAudio ? 'resume' : 'pause', selfMedia.producers?.audio!)
 		setHasAudio(!hasAudio)
 	}
 	const handleVideo = () => {
-		controlMedia(!hasVideo ? 'resume' : 'pause', selfMedia.producers?.video!)
+		// controlMedia(!hasVideo ? 'resume' : 'pause', selfMedia.producers?.video!)
 		setHasVideo(!hasVideo)
 	}
 	const handleShare = () => setHasShare(!hasShare)
@@ -41,7 +42,7 @@ const LocalMedia = ({ id, mediaType, selfMedia, controlMedia }: Props) => {
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
 			{/* 音视频 */}
 			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
-				<video id={id} playsInline autoPlay className="h-full object-fill" muted />
+				<video id="localMedia" playsInline autoPlay className="h-full object-fill" muted />
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div
@@ -65,7 +66,7 @@ const LocalMedia = ({ id, mediaType, selfMedia, controlMedia }: Props) => {
 			</div>
 			{/* 用户名 */}
 			<div className="absolute bottom-2 left-2 bg-[#252525] text-white border-b-2 border-b-[#aeff00] select-none text-sm p-[4.8px]">
-				<p>{selfMedia.id.split('-')[1]}</p>
+				<p>{me.username}</p>
 			</div>
 		</div>
 	)
