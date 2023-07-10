@@ -4,7 +4,7 @@ import Exhibition from './Exhibition/Exhibition'
 import io, { Socket } from 'socket.io-client'
 import * as mediasoup from 'mediasoup-client'
 import { MediaType } from '@/types'
-import { Consumer, Transport } from 'mediasoup-client/lib/types'
+import { Consumer, Producer, Transport } from 'mediasoup-client/lib/types'
 import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 
@@ -14,19 +14,28 @@ interface PeerInfo {
 	producers?: {
 		[key: string]: {
 			producerId: string
-			consumer: Consumer
+			consumer?: Consumer
 		}
 	}
 	videoId: string
+}
+
+interface SelfInfo {
+	id: string
+	stream: MediaStream
+	producers: {
+		[key: string]: Producer
+	}
 }
 
 let socket: Socket
 let device: mediasoup.Device
 let producerTransport: Transport
 let consumerTransport: Transport
-let count = 0
-// 成员列表
+// 成员流媒体列表
 const room = new Map<string, PeerInfo>()
+// 个人
+let self: SelfInfo
 
 const Room = () => {
 	const [roomId, username, mediaType] = useUserStore(state => [state.roomId, state.username, state.mediaType])
@@ -120,47 +129,42 @@ const Room = () => {
 	}
 	// 向mediasoup服务器传输流媒体
 	const publish = async (type: MediaType) => {
-		if (type === MediaType.FORBID) return
+		const stream = await navigator.mediaDevices.getUserMedia({
+			audio: {
+				echoCancellation: true,
+				noiseSuppression: true,
+				autoGainControl: true,
+			},
+			video: { aspectRatio: 16 / 9 },
+		})
+		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
+		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
+		// 添加到房间记录内
+		self = {
+			stream,
+			id: peerId,
+			producers: {
+				audio: audioProducer,
+				video: videoProducer,
+			},
+		}
 
-		let constraint = undefined
+		// 根据配置关闭对应的流
 		switch (type) {
+			case MediaType.FORBID:
+				controlMedia('pause', audioProducer)
+				controlMedia('pause', videoProducer)
+				break
 			case MediaType.AUDIO:
-				constraint = {
-					audio: {
-						echoCancellation: true, // 开启回音消除
-						noiseSuppression: true, // 降噪
-						autoGainControl: true, // 自动增益
-					},
-				}
+				controlMedia('pause', videoProducer)
 				break
 			case MediaType.VIDEO:
-				constraint = { video: { aspectRatio: 16 / 9 } }
+				controlMedia('pause', audioProducer)
 				break
 			case MediaType.ALL:
-				constraint = {
-					audio: {
-						echoCancellation: true,
-						noiseSuppression: true,
-						autoGainControl: true,
-					},
-					video: { aspectRatio: 16 / 9 },
-				}
 				break
 		}
-		const stream = await navigator.mediaDevices.getUserMedia(constraint)
-		switch (type) {
-			case MediaType.AUDIO:
-				await producerTransport.produce({ track: stream.getAudioTracks()[0] })
-				break
-			case MediaType.VIDEO:
-				const producer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
-				console.log(producer)
-				break
-			case MediaType.ALL:
-				await producerTransport.produce({ track: stream.getAudioTracks()[0] })
-				await producerTransport.produce({ track: stream.getVideoTracks()[0] })
-				break
-		}
+
 		// return stream
 		;(document.querySelector('#localMedia') as HTMLVideoElement).srcObject = stream
 	}
@@ -202,6 +206,19 @@ const Room = () => {
 			for (const producerId of peer.producers) {
 				subscribe(peer.peerId, producerId)
 			}
+		}
+	}
+	// 控制Producer流媒体的开关
+	const controlMedia = async (type: 'pause' | 'resume', media: Producer) => {
+		switch (type) {
+			case 'pause':
+				await socket.request('producerPause', { producerId: media.id })
+				media.pause()
+				break
+			case 'resume':
+				await socket.request('producerResume', { producerId: media.id })
+				media.resume()
+				break
 		}
 	}
 

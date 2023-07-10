@@ -144,6 +144,19 @@ io.on('connection', async socket => {
 		await consumer.resume()
 		callback()
 	})
+
+	// 暂停接收Peer的Producer流媒体
+	socket.on('producerPause', async (data, callback) => {
+		const producer = worker.appData.consumers.get(data.producerId)!
+		await producer.pause()
+		callback()
+	})
+	// 恢复接收Peer的Producer流媒体
+	socket.on('producerResume', async (data, callback) => {
+		const producer = worker.appData.consumers.get(data.producerId)!
+		await producer.resume()
+		callback()
+	})
 })
 
 /**
