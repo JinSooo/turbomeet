@@ -243,6 +243,15 @@ const Room = () => {
 				break
 		}
 	}
+	// 关闭与Peer对应的Consumer
+	const leavePeer = async (peerId: string) => {
+		const peer = peers[peerId]
+		for (const consumerId of peer.consumers) {
+			await socket.request('consumerClose', { consumerId })
+			const consumer = consumers.get(consumerId)!
+			consumer.close()
+		}
+	}
 
 	const initWebSocket = () => {
 		socket = io('https://192.168.1.12:8080/', {
@@ -274,11 +283,8 @@ const Room = () => {
 			socket.on('userLeave', async data => {
 				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
 				// 离开则删除用户，移除Media
+				leavePeer(data.peerId)
 				removePeer(data.peerId)
-				// const peer = room.get(data.peerId)!
-				// !peer.producers!.audio?.consumer?.closed && peer.producers!.audio?.consumer?.close()
-				// !peer.producers!.video?.consumer?.closed && peer.producers!.video?.consumer?.close()
-				// room.delete(data.peerId)
 			})
 			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {

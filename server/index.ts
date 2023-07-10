@@ -31,6 +31,8 @@ interface Peer {
 	socket: Socket
 	// 存放对应peer的producer
 	producers: string[]
+	// 存放对应peer的consumer
+	consumers: string[]
 }
 
 // const MAX_SIZE_PER_ROOM = 10
@@ -128,6 +130,10 @@ io.on('connection', async socket => {
 			callback()
 			return
 		}
+
+		// 同步到peer上
+		const peer = peers.get(socket.data.peerId)!
+		peer.consumers.push(consumer.id)
 		callback({
 			producerId: producer.id,
 			id: consumer.id,
@@ -146,7 +152,7 @@ io.on('connection', async socket => {
 	})
 
 	// 暂停接收Peer的Producer流媒体
-  socket.on('producerPause', async (data, callback) => {
+	socket.on('producerPause', async (data, callback) => {
 		const producer = worker.appData.producers.get(data.producerId)!
 		await producer.pause()
 		callback()
@@ -155,6 +161,21 @@ io.on('connection', async socket => {
 	socket.on('producerResume', async (data, callback) => {
 		const producer = worker.appData.producers.get(data.producerId)!
 		await producer.resume()
+		callback()
+	})
+
+	// 客户端关闭对应的Consumer
+	socket.on('consumerClose', async (data, callback) => {
+		/**
+		 * BUG: leaveRoom的时候，Peer的Producer关闭后，似乎所有对应的Consumer会自动关闭
+		 * 我这边现在是无法关闭的，因为consumer已经关闭没了
+		 */
+		const consumer = worker.appData.consumers.get(data.consumerId)
+		consumer?.close()
+
+		const peer = peers.get(socket.data.peerId)!
+		peer.consumers = peer.consumers.filter(val => val !== data.consumerId)
+
 		callback()
 	})
 })
@@ -185,6 +206,7 @@ const joinRoom = async (socket: Socket) => {
 		socket,
 		id: peerId,
 		producers: [],
+		consumers: [],
 	}
 	peers.set(peerId, peer)
 	room.peers.push(peerId)
@@ -202,14 +224,31 @@ const joinRoom = async (socket: Socket) => {
 const leaveRoom = async (socket: Socket) => {
 	const { peerId, roomId } = socket.data
 	const room = rooms.get(roomId)!
-	const peerIndex = room.peers.findIndex(val => val === peerId)
+	const peer = peers.get(peerId)!
 
+	// 删除Peer对应的Media连接
+	for (const producerId of peer.producers) {
+		const producer = room.router.appData.producers.get(producerId)!
+		producer.close()
+	}
+	for (const consumerId of peer.consumers) {
+		const consumer = room.router.appData.consumers.get(consumerId)!
+		consumer.close()
+	}
+
+	const peerIndex = room.peers.findIndex(val => val === peerId)
 	room.peers.splice(peerIndex, 1)
+	peers.delete(peerId)
+
 	// 房间没有人时，删除该房间
 	if (room.peers.length === 0) {
+		// 将router及transport还有Producer和Consumer都关闭删除掉
+		for (const transport of room.router.appData.transports.values()) {
+			transport.close()
+		}
+		room.router.close()
 		rooms.delete(roomId)
 	}
-	peers.delete(peerId)
 
 	socket.to(roomId).emit('userLeave', { peerId })
 }

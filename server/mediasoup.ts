@@ -52,31 +52,53 @@ export const initMediasoup = async () => {
 		// @ts-ignore
 		worker.observer.on('newrouter', (router: Router<RouterAppData>) => {
 			router.appData.worker = worker
-			router.appData.transports = worker.appData.transports
-			router.appData.producers = worker.appData.producers
-			router.appData.consumers = worker.appData.consumers
+			router.appData.transports = new Map()
+			router.appData.producers = new Map()
+			router.appData.consumers = new Map()
 			worker.appData.routers.set(router.id, router)
 
-			router.observer.on('close', () => worker.appData.routers.delete(router.id))
+			router.observer.on('close', () => {
+				worker.appData.routers.delete(router.id)
+			})
 			// @ts-ignore
 			router.observer.on('newtransport', (transport: Transport<TransportAppData>) => {
 				transport.appData.router = router
-				transport.appData.producers = router.appData.producers
-				transport.appData.consumers = router.appData.consumers
+				transport.appData.producers = new Map()
+				transport.appData.consumers = new Map()
 				router.appData.transports.set(transport.id, transport)
+				worker.appData.transports.set(transport.id, transport)
 
-				transport.observer.on('close', () => router.appData.transports.delete(transport.id))
+				transport.observer.on('close', () => {
+					router.appData.transports.delete(transport.id)
+					worker.appData.transports.delete(transport.id)
+				})
 				// @ts-ignore
 				transport.observer.on('newproducer', (producer: Producer<ProducerAppData>) => {
 					producer.appData.transport = transport
 					transport.appData.producers.set(producer.id, producer)
-					transport.observer.on('close', () => transport.appData.producers.delete(producer.id))
+					router.appData.producers.set(producer.id, producer)
+					worker.appData.producers.set(producer.id, producer)
+
+					producer.observer.on('close', () => {
+						transport.appData.producers.delete(producer.id)
+						router.appData.producers.delete(producer.id)
+						worker.appData.producers.delete(producer.id)
+					})
 				})
 				// @ts-ignore
 				transport.observer.on('newconsumer', (consumer: Consumer<ConsumerAppData>) => {
+					console.log('new consumer', consumer.id)
 					consumer.appData.transport = transport
 					transport.appData.consumers.set(consumer.id, consumer)
-					transport.observer.on('close', () => transport.appData.consumers.delete(consumer.id))
+					router.appData.consumers.set(consumer.id, consumer)
+					worker.appData.consumers.set(consumer.id, consumer)
+
+					consumer.observer.on('close', () => {
+						console.log('close consumer', consumer.id)
+						transport.appData.consumers.delete(consumer.id)
+						router.appData.consumers.delete(consumer.id)
+						worker.appData.consumers.delete(consumer.id)
+					})
 				})
 			})
 		})

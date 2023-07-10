@@ -33,3 +33,9 @@ npx local-ssl-proxy --key localhost-key.pem --cert localhost.pem --source 3001 -
 pnpm dev
 pnpm https
 ```
+
+## TODO
+
+### TODO: 目前客户端音视频连接的方式是直接创建两个Producer一直用，但这会一直存在在服务器中，占用空间资源，所以有时间的话，修改一下，根据要求来适配Producer
+
+### TODO: 更新一下文档，更新学习内容
