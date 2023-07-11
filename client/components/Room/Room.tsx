@@ -367,7 +367,7 @@ const Room = () => {
 					closeMedia={closeMedia}
 				/>
 			</div>
-			<div className="w-72">
+			<div className="w-0 sm:w-72">
 				<Chat />
 			</div>
 		</div>

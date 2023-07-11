@@ -31,11 +31,9 @@ const RemoteMedia = ({ peer }: Props) => {
 	}, [peer.consumers.video])
 
 	return (
-		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
+		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg w-full h-[274.5px] sm:w-[488px]">
 			{/* 音视频 */}
-			<div
-				className={`flex justify-center items-end w-[488px] h-[274.5px] select-none ${videoEnabled ? '' : 'invisible'}`}
-			>
+			<div className={`flex justify-center items-end w-full h-full select-none ${videoEnabled ? '' : 'invisible'}`}>
 				<video
 					ref={videoRef}
 					playsInline
@@ -46,7 +44,7 @@ const RemoteMedia = ({ peer }: Props) => {
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div
-				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none ${
+				className={`absolute left-0 top-0 flex justify-center items-end w-full h-full select-none ${
 					videoEnabled ? 'z-[-1]' : 'z-10'
 				}`}
 			>

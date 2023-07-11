@@ -19,7 +19,7 @@ interface Props {
 
 const Exhibition = ({ mediaType, me, peers, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
 	return (
-		<div className="flex justify-center items-center flex-wrap gap-8 w-full h-full">
+		<div className="flex justify-center content-start flex-wrap gap-8 w-full h-full box-border py-8">
 			{/* 本地端 */}
 			<LocalMedia
 				mediaType={mediaType}
