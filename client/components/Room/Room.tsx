@@ -40,18 +40,33 @@ const consumers = new Map<string, Consumer>()
 
 const Room = () => {
 	const [roomId, mediaType] = useUserStore(state => [state.roomId, state.mediaType])
-	const [me, peers, setMeProducers, addPeer, removePeer, addPeerConsumer, addProducer, addConsumer] = useMediasoupStore(
-		state => [
-			state.me,
-			state.peers,
-			state.setMeProducers,
-			state.addPeer,
-			state.removePeer,
-			state.addPeerConsumer,
-			state.addProducer,
-			state.addConsumer,
-		],
-	)
+	const [
+		me,
+		peers,
+		setMeProducers,
+		addMeProducers,
+		removeMeProducer,
+		addPeer,
+		removePeer,
+		addPeerConsumer,
+		addProducer,
+		removeProducer,
+		addConsumer,
+		removeConsumer,
+	] = useMediasoupStore(state => [
+		state.me,
+		state.peers,
+		state.setMeProducers,
+		state.addMeProducer,
+		state.removeMeProducer,
+		state.addPeer,
+		state.removePeer,
+		state.addPeerConsumer,
+		state.addProducer,
+		state.removeProducer,
+		state.addConsumer,
+		state.removeConsumer,
+	])
 	const toast = useToast({ position: 'bottom-right' })
 
 	// 获取并加载device支持RTP类型
@@ -150,33 +165,33 @@ const Room = () => {
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 
-		setMeProducers({ audio: audioProducer.id, video: videoProducer.id })
+		setMeProducers({ audio: audioProducer.id.producerId, video: videoProducer.id.producerId })
 		addProducer({
-			[audioProducer.id]: {
-				id: audioProducer.id,
+			[audioProducer.id.producerId]: {
+				id: audioProducer.id.producerId,
 				track: audioProducer.track,
 				paused: audioProducer.paused,
 			},
-			[videoProducer.id]: {
-				id: videoProducer.id,
+			[videoProducer.id.producerId]: {
+				id: videoProducer.id.producerId,
 				track: videoProducer.track,
 				paused: videoProducer.paused,
 			},
 		})
-		producers.set(audioProducer.id, audioProducer)
-		producers.set(videoProducer.id, videoProducer)
+		producers.set(audioProducer.id.producerId, audioProducer)
+		producers.set(videoProducer.id.producerId, videoProducer)
 
 		// 根据配置关闭对应的流
 		switch (type) {
 			case MediaType.FORBID:
-				controlProducer('pause', audioProducer.id)
-				controlProducer('pause', videoProducer.id)
+				controlProducer('pause', audioProducer.id.producerId)
+				controlProducer('pause', videoProducer.id.producerId)
 				break
 			case MediaType.AUDIO:
-				controlProducer('pause', videoProducer.id)
+				controlProducer('pause', videoProducer.id.producerId)
 				break
 			case MediaType.VIDEO:
-				controlProducer('pause', audioProducer.id)
+				controlProducer('pause', audioProducer.id.producerId)
 				break
 			case MediaType.ALL:
 				break
@@ -252,7 +267,7 @@ const Room = () => {
 			consumer.close()
 		}
 	}
-
+	// 初始化WebSocket
 	const initWebSocket = () => {
 		socket = io('https://192.168.1.12:8080/', {
 			query: {
@@ -271,7 +286,7 @@ const Room = () => {
 					// 断线是由服务器发起的，重新连接。
 					socket.connect()
 				} else {
-          toast({ status: 'error', description: 'You are disconnected' })
+					toast({ status: 'error', description: 'You are disconnected' })
 					producerTransport.close()
 					consumerTransport.close()
 				}
@@ -310,7 +325,14 @@ const Room = () => {
 	return (
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
-				<Exhibition mediaType={mediaType} me={me} peers={peers} controlProducer={controlProducer} />
+				<Exhibition
+					producers={producers}
+					producerTransport={producerTransport}
+					mediaType={mediaType}
+					me={me}
+					peers={peers}
+					controlProducer={controlProducer}
+				/>
 			</div>
 			<div className="w-72">
 				<Chat />

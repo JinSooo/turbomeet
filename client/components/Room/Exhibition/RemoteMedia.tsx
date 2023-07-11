@@ -11,7 +11,7 @@ const RemoteMedia = ({ peer }: Props) => {
 	const consumers = useMediasoupStore(state => state.consumers)
 	const videoRef = useRef<HTMLVideoElement>(null)
 
-	if (videoRef.current && peer.consumers.length === 2) {
+	if (videoRef.current && peer.consumers.length >= 2) {
 		console.log(peer, consumers)
 		const stream = new MediaStream()
 		for (const consumerId of peer.consumers) {

@@ -162,6 +162,16 @@ io.on('connection', async socket => {
 		callback()
 	})
 
+	// 客户端关闭对应的Producer
+	socket.on('producerClose', async (data, callback) => {
+		const producer = worker.appData.producers.get(data.producerId)!
+		producer.close()
+
+		const peer = peers.get(socket.data.peerId)!
+		peer.producers = peer.producers.filter(val => val !== data.producerId)
+
+		callback()
+	})
 	// 客户端关闭对应的Consumer
 	socket.on('consumerClose', async (data, callback) => {
 		/**

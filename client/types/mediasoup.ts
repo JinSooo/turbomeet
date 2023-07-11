@@ -2,8 +2,7 @@ export interface Me {
 	id: string
 	username: string
 	producers: {
-		audio: string
-		video: string
+		[key: string]: string
 	}
 }
 

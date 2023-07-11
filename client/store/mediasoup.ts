@@ -18,14 +18,18 @@ interface Action {
 	setMeId: (id: Me['id']) => void
 	setMeUsername: (username: Me['username']) => void
 	setMeProducers: (producers: Me['producers']) => void
+	addMeProducer: (producerName: string, producerId: string) => void
+	removeMeProducer: (producerName: string) => void
 	setPeers: (peers: State['peers']) => void
 	addPeer: (peerId: string) => void
 	removePeer: (peerId: string) => void
 	addPeerConsumer: (peerId: string, consumerId: string) => void
 	setProducers: (producers: State['producers']) => void
 	addProducer: (producer: State['producers']) => void
+	removeProducer: (producerId: string) => void
 	setConsumers: (consumers: State['consumers']) => void
 	addConsumer: (producer: State['consumers']) => void
+	removeConsumer: (consumerId: string) => void
 }
 
 const useMediasoupStore = create<State & Action>(set => ({
@@ -44,6 +48,16 @@ const useMediasoupStore = create<State & Action>(set => ({
 	setMeId: id => set(state => ({ me: { ...state.me, id } })),
 	setMeUsername: username => set(state => ({ me: { ...state.me, username } })),
 	setMeProducers: producers => set(state => ({ me: { ...state.me, producers: producers } })),
+	addMeProducer: (producerName, producerId) =>
+		set(state => {
+			state.me.producers[producerName] = producerId
+			return { me: { ...state.me } }
+		}),
+	removeMeProducer: producerName =>
+		set(state => {
+			delete state.me.producers[producerName]
+			return { me: { ...state.me } }
+		}),
 	setPeers: peers => set(state => ({ peers: peers })),
 	addPeer: peerId =>
 		set(state => {
@@ -69,8 +83,18 @@ const useMediasoupStore = create<State & Action>(set => ({
 		}),
 	setProducers: producers => set(state => ({ producers: producers })),
 	addProducer: producer => set(state => ({ producers: { ...state.producers, ...producer } })),
+	removeProducer: producerId =>
+		set(state => {
+			delete state.producers[producerId]
+			return { producers: { ...state.producers } }
+		}),
 	setConsumers: consumers => set(state => ({ consumers: consumers })),
 	addConsumer: consumer => set(state => ({ consumers: { ...state.consumers, ...consumer } })),
+	removeConsumer: consumerId =>
+		set(state => {
+			delete state.consumers[consumerId]
+			return { consumers: { ...state.consumers } }
+		}),
 }))
 
 export default useMediasoupStore
