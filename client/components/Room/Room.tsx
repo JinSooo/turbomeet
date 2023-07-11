@@ -231,7 +231,7 @@ const Room = () => {
 		 * TODO: 每次都添加一次Peer的方式不行，但目前无法获取到准确的peers，所以只能先在addPeer中处理逻辑了
 		 */
 		// 添加Peer，如果存在则忽略
-		addPeer(peerId)
+		// addPeer(peerId)
 		addPeerConsumer(peerId, consumer.id, data.kind)
 		addConsumer({
 			[consumer.id]: {
@@ -253,6 +253,7 @@ const Room = () => {
 		// @ts-ignore
 		peers = peers.filter(peer => peer.peerId !== me.id)
 		for (const peer of peers) {
+			addPeer(peer.peerId)
 			for (const producerId of peer.producers) {
 				subscribe(peer.peerId, producerId)
 			}
@@ -296,6 +297,7 @@ const Room = () => {
 			})
 			socket.on('userJoin', async data => {
 				toast({ status: 'info', description: `User ${data.peerId.split('-')[1]} join the room` })
+				addPeer(data.peerId)
 			})
 			socket.on('userLeave', async data => {
 				toast({ status: 'warning', description: `User ${data.peerId.split('-')[1]} leave the room` })
