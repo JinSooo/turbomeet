@@ -19,7 +19,8 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 	const audioRef = useRef<HTMLAudioElement>(null)
 	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
 	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
-	const [hasShare, setHasShare] = useState(false)
+  const [hasShare, setHasShare] = useState(false)
+	const videoEnabled = !!me.producers.video
 	const styles = {
 		audioColorScheme: hasAudio ? 'teal' : 'gray',
 		audioImg: hasAudio ? '/img/audio.svg' : '/img/audio_forbid.svg',
@@ -65,14 +66,16 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 	return (
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
 			{/* 音视频 */}
-			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
-				<video ref={videoRef} playsInline autoPlay className="h-full object-fill" muted />
+			<div
+				className={`flex justify-center items-end w-[488px] h-[274.5px] select-none ${videoEnabled ? '' : 'invisible'}`}
+			>
+				<video ref={videoRef} playsInline autoPlay muted className="h-full object-fill" />
 				<audio ref={audioRef} autoPlay className="invisible" muted />
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div
-				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none  bg-[rgba(49,49,49,0.9)] ${
-					hasVideo ? 'z-[-1]' : 'z-10'
+				className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none ${
+					videoEnabled ? 'z-[-1]' : 'z-10'
 				}`}
 			>
 				<Image src={'/img/avatar.svg'} alt="avatar" width={250} height={250} />
