@@ -29,10 +29,8 @@ interface Peer {
 	id: string
 	roomId: string
 	socket: Socket
-	// 存放对应peer的producer
-	producers: string[]
-	// 存放对应peer的consumer
-	consumers: string[]
+	producers: string[] // 存放对应peer的producer
+	consumers: string[] // 存放对应peer的consumer
 }
 
 // const MAX_SIZE_PER_ROOM = 10

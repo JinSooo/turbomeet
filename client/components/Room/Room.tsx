@@ -271,7 +271,9 @@ const Room = () => {
 					// 断线是由服务器发起的，重新连接。
 					socket.connect()
 				} else {
-					toast({ status: 'error', description: 'You are disconnected' })
+          toast({ status: 'error', description: 'You are disconnected' })
+					producerTransport.close()
+					consumerTransport.close()
 				}
 			})
 			socket.on('error', async data => {
