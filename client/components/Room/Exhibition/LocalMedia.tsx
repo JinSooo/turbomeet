@@ -57,6 +57,10 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 			videoRef.current.srcObject = stream
 		}
 	}, [me.producers.video])
+	// 当点击特殊按钮关闭时，异步同步按钮状态
+	useEffect(() => {
+		setHasShare(!!me.producers.share)
+	}, [me.producers.share])
 
 	return (
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">

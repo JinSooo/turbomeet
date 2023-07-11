@@ -192,9 +192,17 @@ const Room = () => {
 		const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
 		const shareProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 		savePublishMedia('share', shareProducer)
+		// 监听屏幕共享关闭，点击特殊按钮时
+		// @ts-ignore
+		stream.oninactive = () => {
+			closeMedia('share', shareProducer.id.producerId)
+		}
 	}
 	// 关闭推流
   const closeMedia = async (type: SelfMediaType, producerId: string) => {
+		// 用于防止共享屏幕的重复关闭
+		if (!producers.has(producerId)) return
+
 		await socket.request('producerClose', { producerId })
 		const producer = producers.get(producerId)!
 		producer.close()
