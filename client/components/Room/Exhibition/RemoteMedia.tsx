@@ -1,7 +1,7 @@
 import useMediasoupStore from '@/store/mediasoup'
 import { Peer } from '@/types'
 import Image from 'next/image'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface Props {
 	peer: Peer
@@ -12,18 +12,21 @@ const RemoteMedia = ({ peer }: Props) => {
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const audioRef = useRef<HTMLAudioElement>(null)
 
-	if (videoRef.current && audioRef.current && Object.keys(peer.consumers).length) {
-		if (peer.consumers.audio) {
+	// 监听变化再渲染
+	useEffect(() => {
+		if (audioRef.current && peer.consumers.audio) {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.audio].track!)
 			audioRef.current.srcObject = stream
 		}
-		if (peer.consumers.video) {
+	}, [peer.consumers.audio])
+	useEffect(() => {
+		if (videoRef.current && peer.consumers.video) {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.video].track!)
 			videoRef.current.srcObject = stream
 		}
-	}
+	}, [peer.consumers.video])
 
 	return (
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">

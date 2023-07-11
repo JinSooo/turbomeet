@@ -2,7 +2,7 @@ import useMediasoupStore from '@/store/mediasoup'
 import { Me, MediaType, SelfMediaType } from '@/types'
 import { Button } from '@chakra-ui/react'
 import Image from 'next/image'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
 	mediaType: MediaType
@@ -42,18 +42,21 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 		setHasShare(!hasShare)
 	}
 
-	if (videoRef.current && audioRef.current) {
-		if (me.producers.audio) {
+	// 监听变化再渲染
+	useEffect(() => {
+		if (audioRef.current && me.producers.audio) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.audio].track!)
 			audioRef.current.srcObject = stream
 		}
-		if (me.producers.video) {
+	}, [me.producers.audio])
+	useEffect(() => {
+		if (videoRef.current && me.producers.video) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.video].track!)
 			videoRef.current.srcObject = stream
 		}
-	}
+	}, [me.producers.video])
 
 	return (
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
