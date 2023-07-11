@@ -1,7 +1,7 @@
 import useMediasoupStore from '@/store/mediasoup'
 import { Peer } from '@/types'
 import Image from 'next/image'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 
 interface Props {
 	peer: Peer
@@ -10,15 +10,19 @@ interface Props {
 const RemoteMedia = ({ peer }: Props) => {
 	const consumers = useMediasoupStore(state => state.consumers)
 	const videoRef = useRef<HTMLVideoElement>(null)
+	const audioRef = useRef<HTMLAudioElement>(null)
 
-	if (videoRef.current && peer.consumers.length >= 2) {
-		console.log(peer, consumers)
-		const stream = new MediaStream()
-		for (const consumerId of peer.consumers) {
-			const consumer = consumers[consumerId]
-			stream.addTrack(consumer.track!)
+	if (videoRef.current && audioRef.current && Object.keys(peer.consumers).length) {
+		if (peer.consumers.audio) {
+			const stream = new MediaStream()
+			stream.addTrack(consumers[peer.consumers.audio].track!)
+			audioRef.current.srcObject = stream
 		}
-		videoRef.current.srcObject = stream
+		if (peer.consumers.video) {
+			const stream = new MediaStream()
+			stream.addTrack(consumers[peer.consumers.video].track!)
+			videoRef.current.srcObject = stream
+		}
 	}
 
 	return (
@@ -26,6 +30,7 @@ const RemoteMedia = ({ peer }: Props) => {
 			{/* 音视频 */}
 			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
 				<video ref={videoRef} playsInline autoPlay className="h-full object-fill" />
+				<audio ref={audioRef} autoPlay className="invisible" />
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div className={`absolute left-0 top-0 flex justify-center items-end w-[488px] h-[274.5px] select-none`}>

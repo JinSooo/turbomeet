@@ -217,7 +217,7 @@ const Room = () => {
 		 */
 		// 添加Peer，如果存在则忽略
 		addPeer(peerId)
-		addPeerConsumer(peerId, consumer.id)
+		addPeerConsumer(peerId, consumer.id, data.kind)
 		addConsumer({
 			[consumer.id]: {
 				id: consumer.id,
@@ -261,7 +261,7 @@ const Room = () => {
 	// 关闭与Peer对应的Consumer
 	const leavePeer = async (peerId: string) => {
 		const peer = peers[peerId]
-		for (const consumerId of peer.consumers) {
+		for (const consumerId of Object.values(peer.consumers)) {
 			await socket.request('consumerClose', { consumerId })
 			const consumer = consumers.get(consumerId)!
 			consumer.close()

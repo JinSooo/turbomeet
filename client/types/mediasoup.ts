@@ -9,7 +9,9 @@ export interface Me {
 export interface Peer {
 	id: string
 	username: string
-	consumers: string[]
+	consumers: {
+		[key: string]: string
+	}
 }
 
 export interface SelfProducer {

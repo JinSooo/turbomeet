@@ -23,7 +23,7 @@ interface Action {
 	setPeers: (peers: State['peers']) => void
 	addPeer: (peerId: string) => void
 	removePeer: (peerId: string) => void
-	addPeerConsumer: (peerId: string, consumerId: string) => void
+	addPeerConsumer: (peerId: string, consumerId: string, consumerKind: string) => void
 	setProducers: (producers: State['producers']) => void
 	addProducer: (producer: State['producers']) => void
 	removeProducer: (producerId: string) => void
@@ -65,7 +65,7 @@ const useMediasoupStore = create<State & Action>(set => ({
 				state.peers[peerId] = {
 					id: peerId,
 					username: peerId.split('-')[1],
-					consumers: [],
+					consumers: {},
 				}
 			}
 
@@ -76,9 +76,9 @@ const useMediasoupStore = create<State & Action>(set => ({
 			delete state.peers[peerId]
 			return { peers: { ...state.peers } }
 		}),
-	addPeerConsumer: (peerId, consumerId) =>
+	addPeerConsumer: (peerId, consumerId, consumerKind) =>
 		set(state => {
-			state.peers[peerId].consumers.push(consumerId)
+			state.peers[peerId].consumers[consumerKind] = consumerId
 			return { peers: { ...state.peers } }
 		}),
 	setProducers: producers => set(state => ({ producers: producers })),
