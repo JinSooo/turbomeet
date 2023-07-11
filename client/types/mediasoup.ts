@@ -27,3 +27,5 @@ export interface PeerConsumer {
 	pausedRemotely: boolean
 	track: MediaStreamTrack | null
 }
+
+export type SelfMediaType = 'audio' | 'video' | 'share'

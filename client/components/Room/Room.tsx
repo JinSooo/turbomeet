@@ -3,9 +3,9 @@ import Chat from './Chat'
 import Exhibition from './Exhibition/Exhibition'
 import io, { Socket } from 'socket.io-client'
 import * as mediasoup from 'mediasoup-client'
-import { MediaType } from '@/types'
+import { MediaType, SelfMediaType } from '@/types'
 import { Consumer, Producer, Transport } from 'mediasoup-client/lib/types'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useToast } from '@chakra-ui/react'
 import useMediasoupStore from '@/store/mediasoup'
 
@@ -33,8 +33,7 @@ let socket: Socket
 let device: mediasoup.Device
 let producerTransport: Transport
 let consumerTransport: Transport
-// 成员流媒体列表
-const room = new Map<string, PeerInfo>()
+// 实例映射
 const producers = new Map<string, Producer>()
 const consumers = new Map<string, Consumer>()
 
@@ -43,8 +42,7 @@ const Room = () => {
 	const [
 		me,
 		peers,
-		setMeProducers,
-		addMeProducers,
+		addMeProducer,
 		removeMeProducer,
 		addPeer,
 		removePeer,
@@ -52,11 +50,9 @@ const Room = () => {
 		addProducer,
 		removeProducer,
 		addConsumer,
-		removeConsumer,
 	] = useMediasoupStore(state => [
 		state.me,
 		state.peers,
-		state.setMeProducers,
 		state.addMeProducer,
 		state.removeMeProducer,
 		state.addPeer,
@@ -65,7 +61,6 @@ const Room = () => {
 		state.addProducer,
 		state.removeProducer,
 		state.addConsumer,
-		state.removeConsumer,
 	])
 	const toast = useToast({ position: 'bottom-right' })
 
@@ -152,54 +147,74 @@ const Room = () => {
 		producerTransport = await createProducerTransport()
 		consumerTransport = await createConsumerTransport()
 	}
-	// 向mediasoup服务器传输流媒体
-	const publish = async (type: MediaType) => {
+	// 保存Producer信息到全局上
+	const savePublishMedia = (type: SelfMediaType, producer: Producer) => {
+		addMeProducer(type, producer.id.producerId)
+		addProducer({
+			[producer.id.producerId]: {
+				id: producer.id.producerId,
+				track: producer.track,
+				paused: producer.paused,
+			},
+		})
+		producers.set(producer.id.producerId, producer)
+	}
+	// 向服务器推音频流
+	const publishAudio = async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({
 			audio: {
 				echoCancellation: true,
 				noiseSuppression: true,
 				autoGainControl: true,
 			},
-			video: { aspectRatio: 16 / 9 },
+			video: false,
 		})
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
-		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
-
-		setMeProducers({ audio: audioProducer.id.producerId, video: videoProducer.id.producerId })
-		addProducer({
-			[audioProducer.id.producerId]: {
-				id: audioProducer.id.producerId,
-				track: audioProducer.track,
-				paused: audioProducer.paused,
-			},
-			[videoProducer.id.producerId]: {
-				id: videoProducer.id.producerId,
-				track: videoProducer.track,
-				paused: videoProducer.paused,
-			},
+		savePublishMedia('audio', audioProducer)
+	}
+	// 向服务器推视频流
+	const publishVideo = async () => {
+		const stream = await navigator.mediaDevices.getUserMedia({
+			audio: false,
+			video: { aspectRatio: 16 / 9 },
 		})
-		producers.set(audioProducer.id.producerId, audioProducer)
-		producers.set(videoProducer.id.producerId, videoProducer)
+		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
+		savePublishMedia('video', videoProducer)
+	}
+	// 向服务器推共享屏幕
+	const publishShare = async () => {
+		const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+		const shareProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
+		savePublishMedia('share', shareProducer)
+	}
+	// 关闭推流
+	const closeMedia = (type: SelfMediaType, producerId: string) => {
+		const producer = producers.get(producerId)!
+		producer.close()
 
-		// 根据配置关闭对应的流
+		removeMeProducer(type)
+		removeProducer(producerId)
+		producers.delete(producerId)
+	}
+	// 初始设置推流
+	const publish = async (type: MediaType) => {
+		// 根据配置推对应的流
 		switch (type) {
 			case MediaType.FORBID:
-				controlProducer('pause', audioProducer.id.producerId)
-				controlProducer('pause', videoProducer.id.producerId)
 				break
 			case MediaType.AUDIO:
-				controlProducer('pause', videoProducer.id.producerId)
+				publishAudio()
 				break
 			case MediaType.VIDEO:
-				controlProducer('pause', audioProducer.id.producerId)
+				publishVideo()
 				break
 			case MediaType.ALL:
+				publishAudio()
+				publishVideo()
 				break
 		}
-
-		;(document.querySelector('#localMedia') as HTMLVideoElement).srcObject = stream
 	}
-	// 从mediasoup服务器订阅获取流媒体
+	// 从mediasoup服务器订阅流媒体
 	const subscribe = async (peerId: string, producerId: string) => {
 		const data = await socket.request('consume', {
 			producerId,
@@ -241,21 +256,6 @@ const Room = () => {
 			for (const producerId of peer.producers) {
 				subscribe(peer.peerId, producerId)
 			}
-		}
-	}
-	// 控制Producer流媒体的开关
-	const controlProducer = async (type: 'pause' | 'resume', producerId: string) => {
-		const producer = producers.get(producerId)!
-
-		switch (type) {
-			case 'pause':
-				await socket.request('producerPause', producer.id)
-				producer.pause()
-				break
-			case 'resume':
-				await socket.request('producerResume', producer.id)
-				producer.resume()
-				break
 		}
 	}
 	// 关闭与Peer对应的Consumer
@@ -326,12 +326,13 @@ const Room = () => {
 		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
 			<div className="flex-1">
 				<Exhibition
-					producers={producers}
-					producerTransport={producerTransport}
 					mediaType={mediaType}
 					me={me}
 					peers={peers}
-					controlProducer={controlProducer}
+					publishAudio={publishAudio}
+					publishVideo={publishVideo}
+					publishShare={publishShare}
+					closeMedia={closeMedia}
 				/>
 			</div>
 			<div className="w-72">

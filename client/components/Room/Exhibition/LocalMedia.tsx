@@ -1,25 +1,22 @@
 import useMediasoupStore from '@/store/mediasoup'
-import { Me, MediaType } from '@/types'
+import { Me, MediaType, SelfMediaType } from '@/types'
 import { Button } from '@chakra-ui/react'
-import { Producer, Transport } from 'mediasoup-client/lib/types'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 interface Props {
-	producers: Map<string, Producer>
-	producerTransport: Transport
 	mediaType: MediaType
 	me: Me
-	controlProducer: (type: 'pause' | 'resume', producerId: string) => Promise<void>
+	publishAudio: () => Promise<void>
+	publishVideo: () => Promise<void>
+	publishShare: () => Promise<void>
+	closeMedia: (type: SelfMediaType, producerId: string) => void
 }
 
-const LocalMedia = ({ mediaType, me, controlProducer, producers, producerTransport }: Props) => {
-	const [addMeProducer, addProducer, removeMeProducer, removeProducer] = useMediasoupStore(state => [
-		state.addMeProducer,
-		state.addProducer,
-		state.removeMeProducer,
-		state.removeProducer,
-	])
+const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
+	const producers = useMediasoupStore(state => state.producers)
+	const videoRef = useRef<HTMLVideoElement>(null)
+	const audioRef = useRef<HTMLAudioElement>(null)
 	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
 	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
 	const [hasShare, setHasShare] = useState(false)
@@ -32,53 +29,38 @@ const LocalMedia = ({ mediaType, me, controlProducer, producers, producerTranspo
 		shareImg: '/img/share.svg',
 	}
 
-	// 开启共享屏幕
-	const publishShare = async () => {
-		const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
-		const shareProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
-		console.log(shareProducer)
-		addMeProducer('share', shareProducer.id.producerId)
-		addProducer({
-			[shareProducer.id.producerId]: {
-				id: shareProducer.id.producerId,
-				track: shareProducer.track,
-				paused: shareProducer.paused,
-			},
-		})
-		producers.set(shareProducer.id.producerId, shareProducer)
-	}
-	// 关闭共享屏幕
-	const closeShare = async () => {
-		const shareProducer = producers.get(me.producers.share)!
-		shareProducer.close()
-
-		removeMeProducer('share')
-		removeProducer(me.producers.share)
-		producers.delete(me.producers.share)
-	}
-
 	const handleAudio = () => {
-		controlProducer(!hasAudio ? 'resume' : 'pause', me.producers.audio)
+		!hasAudio ? publishAudio() : closeMedia('audio', me.producers.audio)
 		setHasAudio(!hasAudio)
 	}
 	const handleVideo = () => {
-		controlProducer(!hasVideo ? 'resume' : 'pause', me.producers.video)
+		!hasVideo ? publishVideo() : closeMedia('video', me.producers.video)
 		setHasVideo(!hasVideo)
 	}
 	const handleShare = () => {
-		if (!hasShare) {
-			publishShare()
-		} else {
-			closeShare()
-		}
+		!hasShare ? publishShare() : closeMedia('share', me.producers.share)
 		setHasShare(!hasShare)
+	}
+
+	if (videoRef.current && audioRef.current) {
+		if (me.producers.audio) {
+			const stream = new MediaStream()
+			stream.addTrack(producers[me.producers.audio].track!)
+			audioRef.current.srcObject = stream
+		}
+		if (me.producers.video) {
+			const stream = new MediaStream()
+			stream.addTrack(producers[me.producers.video].track!)
+			videoRef.current.srcObject = stream
+		}
 	}
 
 	return (
 		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
 			{/* 音视频 */}
 			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
-				<video id="localMedia" playsInline autoPlay className="h-full object-fill" muted />
+				<video ref={videoRef} playsInline autoPlay className="h-full object-fill" muted />
+				<audio ref={audioRef} autoPlay className="invisible" muted />
 			</div>
 			{/* 如果没开视频时，显示头像 */}
 			<div
