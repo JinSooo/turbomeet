@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .svgFill {
+    @apply overflow-hidden
+  }
+  .svgFill img {
+    @apply drop-shadow-[#000_100px_0] translate-x-[-100px]
+  }
+}
+
 html,
 body {
 	height: 100vh;

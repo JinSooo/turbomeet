@@ -81,14 +81,26 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 				<Image src={'/img/avatar.svg'} alt="avatar" width={250} height={250} />
 			</div>
 			{/* 控制区 */}
-			<div className="absolute flex flex-col gap-2 right-2 top-14 z-50">
-				<Button className="w-[50px] h-[50px] rounded-full" colorScheme={styles.audioColorScheme} onClick={handleAudio}>
+			<div className="absolute flex flex-col gap-2 right-2 top-14 z-50 svgFill">
+				<Button
+					className="!w-[50px] !h-[50px] !rounded-full"
+					colorScheme={styles.audioColorScheme}
+					onClick={handleAudio}
+				>
 					<Image src={styles.audioImg} alt="forbid" width={18} height={18} />
 				</Button>
-				<Button className="w-[50px] h-[50px] rounded-full" colorScheme={styles.videoColorScheme} onClick={handleVideo}>
+				<Button
+					className="!w-[50px] !h-[50px] !rounded-full"
+					colorScheme={styles.videoColorScheme}
+					onClick={handleVideo}
+				>
 					<Image src={styles.videoImg} alt="forbid" width={18} height={18} />
 				</Button>
-				<Button className="w-[50px] h-[50px] rounded-full" colorScheme={styles.shareColorScheme} onClick={handleShare}>
+				<Button
+					className="!w-[50px] !h-[50px] !rounded-full"
+					colorScheme={styles.shareColorScheme}
+					onClick={handleShare}
+				>
 					<Image src={styles.shareImg} alt="forbid" width={18} height={18} />
 				</Button>
 			</div>

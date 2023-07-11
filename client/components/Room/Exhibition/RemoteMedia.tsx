@@ -57,7 +57,7 @@ const RemoteMedia = ({ peer }: Props) => {
 				<p>{peer.username}</p>
 			</div>
 			{/* 音视频状态 */}
-			<div className="absolute top-2 right-2 select-none flex gap-4">
+			<div className="absolute top-2 right-2 select-none flex gap-2">
 				{!audioEnabled && <Image src={'/img/audio_forbid.svg'} alt="audio" width={18} height={18} />}
 				{!videoEnabled && <Image src={'/img/video_forbid.svg'} alt="audio" width={18} height={18} />}
 			</div>
