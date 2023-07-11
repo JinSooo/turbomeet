@@ -171,6 +171,8 @@ io.on('connection', async socket => {
 		peer.producers = peer.producers.filter(val => val !== data.producerId)
 
 		callback()
+
+		socket.to(socket.data.roomId).emit('userProducerClose', { peerId: socket.data.peerId, producerId: data.producerId })
 	})
 	// 客户端关闭对应的Consumer
 	socket.on('consumerClose', async (data, callback) => {
@@ -240,8 +242,8 @@ const leaveRoom = async (socket: Socket) => {
 		producer.close()
 	}
 	for (const consumerId of peer.consumers) {
-		const consumer = room.router.appData.consumers.get(consumerId)!
-		consumer.close()
+		const consumer = room.router.appData.consumers.get(consumerId)
+		consumer?.close()
 	}
 
 	const peerIndex = room.peers.findIndex(val => val === peerId)

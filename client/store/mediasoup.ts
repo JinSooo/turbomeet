@@ -24,6 +24,7 @@ interface Action {
 	addPeer: (peerId: string) => void
 	removePeer: (peerId: string) => void
 	addPeerConsumer: (peerId: string, consumerId: string, consumerKind: string) => void
+	removePeerConsumer: (peerId: string, consumerId: string) => void
 	setProducers: (producers: State['producers']) => void
 	addProducer: (producer: State['producers']) => void
 	removeProducer: (producerId: string) => void
@@ -79,6 +80,12 @@ const useMediasoupStore = create<State & Action>(set => ({
 	addPeerConsumer: (peerId, consumerId, consumerKind) =>
 		set(state => {
 			state.peers[peerId].consumers[consumerKind] = consumerId
+			return { peers: { ...state.peers } }
+		}),
+	removePeerConsumer: (peerId, consumerId) =>
+		set(state => {
+			const kind = Object.entries(state.peers[peerId].consumers).find(consumer => consumer[1] === consumerId)?.[0] ?? ''
+			delete state.peers[peerId].consumers[kind]
 			return { peers: { ...state.peers } }
 		}),
 	setProducers: producers => set(state => ({ producers: producers })),

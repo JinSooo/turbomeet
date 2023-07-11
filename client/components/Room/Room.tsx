@@ -36,6 +36,8 @@ let consumerTransport: Transport
 // 实例映射
 const producers = new Map<string, Producer>()
 const consumers = new Map<string, Consumer>()
+// Peer端的 producer -> consumer 的映射
+const ptc = new Map<string, string>()
 
 const Room = () => {
 	const [roomId, mediaType] = useUserStore(state => [state.roomId, state.mediaType])
@@ -47,9 +49,11 @@ const Room = () => {
 		addPeer,
 		removePeer,
 		addPeerConsumer,
+		removePeerConsumer,
 		addProducer,
 		removeProducer,
 		addConsumer,
+		removeConsumer,
 	] = useMediasoupStore(state => [
 		state.me,
 		state.peers,
@@ -58,9 +62,11 @@ const Room = () => {
 		state.addPeer,
 		state.removePeer,
 		state.addPeerConsumer,
+		state.removePeerConsumer,
 		state.addProducer,
 		state.removeProducer,
 		state.addConsumer,
+		state.removeConsumer,
 	])
 	const toast = useToast({ position: 'bottom-right' })
 
@@ -188,7 +194,8 @@ const Room = () => {
 		savePublishMedia('share', shareProducer)
 	}
 	// 关闭推流
-	const closeMedia = (type: SelfMediaType, producerId: string) => {
+  const closeMedia = async (type: SelfMediaType, producerId: string) => {
+		await socket.request('producerClose', { producerId })
 		const producer = producers.get(producerId)!
 		producer.close()
 
@@ -227,12 +234,10 @@ const Room = () => {
 			kind: data.kind,
 			rtpParameters: data.rtpParameters,
 		})
-		/**
-		 * TODO: 每次都添加一次Peer的方式不行，但目前无法获取到准确的peers，所以只能先在addPeer中处理逻辑了
-		 */
-		// 添加Peer，如果存在则忽略
-		// addPeer(peerId)
-		addPeerConsumer(peerId, consumer.id, data.kind)
+
+		// 表明传过来的视频流是共享屏幕的
+		if (consumer.kind === 'video' && consumer.localId === '2') addPeerConsumer(peerId, consumer.id, 'share')
+		else addPeerConsumer(peerId, consumer.id, consumer.kind)
 		addConsumer({
 			[consumer.id]: {
 				id: consumer.id,
@@ -242,7 +247,8 @@ const Room = () => {
 				track: consumer.track,
 			},
 		})
-		consumers.set(consumer.id, consumer)
+    consumers.set(consumer.id, consumer)
+    ptc.set(producerId, consumer.id)
 
 		// 客户端接收到consumer之后，就可以通知服务器恢复了
 		await socket.request('resume', { consumerId: consumer.id })
@@ -267,7 +273,20 @@ const Room = () => {
 			const consumer = consumers.get(consumerId)!
 			consumer.close()
 		}
-	}
+  }
+  // 关闭Producer对应的Consumer
+  const userProducerClose = async (peerId: string, producerId: string) => {
+    const consumerId = ptc.get(producerId)!
+    const consumer = consumers.get(consumerId)!
+
+    await socket.request('consumerClose', { consumerId })
+    consumer.close()
+    removePeerConsumer(peerId, consumerId)
+    removeConsumer(consumerId)
+    consumers.delete(consumerId)
+    ptc.delete(producerId)
+  }
+
 	// 初始化WebSocket
 	const initWebSocket = () => {
 		socket = io('https://192.168.1.12:8080/', {
@@ -304,6 +323,9 @@ const Room = () => {
 				// 离开则删除用户，移除Media
 				leavePeer(data.peerId)
 				removePeer(data.peerId)
+			})
+			socket.on('userProducerClose', async data => {
+				userProducerClose(data.peerId, data.producerId)
 			})
 			// 有新的用户进入，读取它的音视频数据
 			socket.on('newProducer', data => {

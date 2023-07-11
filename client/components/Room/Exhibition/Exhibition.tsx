@@ -1,7 +1,9 @@
 import { Me, MediaType, Peer, SelfMediaType } from '@/types'
 import LocalMedia from './LocalMedia'
 import RemoteMedia from './RemoteMedia'
-import ShareMedia from './ShareMedia'
+import LocalShareMedia from './LocalShareMedia'
+import RemoteShareMedia from './RemoteShareMedia'
+import { Fragment } from 'react'
 
 interface Props {
 	mediaType: MediaType
@@ -28,10 +30,13 @@ const Exhibition = ({ mediaType, me, peers, publishAudio, publishVideo, publishS
 				closeMedia={closeMedia}
 			/>
 			{/* 共享屏幕 */}
-			{me.producers.share && <ShareMedia me={me} />}
+			{me.producers.share && <LocalShareMedia me={me} />}
 			{/* 远程端 */}
 			{Object.values(peers).map(peer => (
-				<RemoteMedia key={`remoteMedia-${peer.id}`} peer={peer} />
+				<Fragment key={`remoteMedia-${peer.id}`}>
+					<RemoteMedia peer={peer} />
+					{peer.consumers.share && <RemoteShareMedia peer={peer} />}
+				</Fragment>
 			))}
 		</div>
 	)

@@ -12,6 +12,8 @@ const RemoteMedia = ({ peer }: Props) => {
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const audioRef = useRef<HTMLAudioElement>(null)
 
+  console.log(peer, consumers)
+
 	// 监听变化再渲染
 	useEffect(() => {
 		if (audioRef.current && peer.consumers.audio) {
