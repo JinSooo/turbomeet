@@ -60,6 +60,12 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 	}, [me.producers.video])
 	// 当点击特殊按钮关闭时，异步同步按钮状态
 	useEffect(() => {
+		setHasAudio(!!me.producers.audio)
+	}, [me.producers.audio])
+	useEffect(() => {
+		setHasVideo(!!me.producers.video)
+	}, [me.producers.video])
+	useEffect(() => {
 		setHasShare(!!me.producers.share)
 	}, [me.producers.share])
 
