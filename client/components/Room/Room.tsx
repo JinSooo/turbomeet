@@ -10,24 +10,8 @@ import { useToast } from '@chakra-ui/react'
 import useMediasoupStore from '@/store/mediasoup'
 import MediaMenu from './MediaMenu'
 
-export interface PeerInfo {
-	id: string
-	stream: MediaStream
-	producers?: {
-		[key: string]: {
-			producerId: string
-			consumer: Consumer
-		}
-	}
-	videoId: string
-}
-
-export interface SelfInfo {
-	id: string
-	stream?: MediaStream
-	producers?: {
-		[key: string]: Producer
-	}
+interface Props {
+	toLogin: () => void
 }
 
 let socket: Socket
@@ -40,7 +24,7 @@ const consumers = new Map<string, Consumer>()
 // Peer端的 producer -> consumer 的映射
 const ptc = new Map<string, string>()
 
-const Room = () => {
+const Room = ({ toLogin }: Props) => {
 	const [roomId, mediaType] = useUserStore(state => [state.roomId, state.mediaType])
 	const [
 		me,
@@ -328,6 +312,23 @@ const Room = () => {
 		consumers.delete(consumerId)
 		ptc.delete(producerId)
 	}
+	const leaveSelf = () => {
+		producers.forEach(producer => {
+			producer.close()
+		})
+		consumers.forEach(consumer => {
+			consumer.close()
+		})
+		producerTransport.close()
+		consumerTransport.close()
+	}
+	// 离开房间
+	const leave = () => {
+		leaveSelf()
+		socket.disconnect()
+		socket.close()
+		toLogin()
+	}
 
 	// 初始化WebSocket
 	const initWebSocket = () => {
@@ -350,8 +351,7 @@ const Room = () => {
 					socket.connect()
 				} else {
 					toast({ status: 'error', description: 'You are disconnected' })
-					producerTransport.close()
-					consumerTransport.close()
+					leaveSelf()
 				}
 			})
 			socket.on('error', async data => {
@@ -398,6 +398,7 @@ const Room = () => {
 					publishAudio={publishAudio}
 					publishVideo={publishVideo}
 					closeMedia={closeMedia}
+					leave={leave}
 				/>
 			</div>
 			<div className="flex flex-1">

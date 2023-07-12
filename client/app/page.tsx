@@ -7,10 +7,5 @@ import { useState } from 'react'
 export default function Home() {
 	const [isLogin, setIsLogin] = useState(false)
 
-	return <>{isLogin ? <Room /> : <Login login={() => setIsLogin(true)} />}</>
-	// return (
-	// 	<>
-	// 		<Room />
-	// 	</>
-	// )
+	return <>{isLogin ? <Room toLogin={() => setIsLogin(false)} /> : <Login login={() => setIsLogin(true)} />}</>
 }

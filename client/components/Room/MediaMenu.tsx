@@ -15,8 +15,8 @@ import {
 	Button,
 	Select,
 } from '@chakra-ui/react'
-import { HamburgerIcon, SettingsIcon } from '@chakra-ui/icons'
-import { ChangeEvent, useEffect, useState } from 'react'
+import { HamburgerIcon, SettingsIcon, ExternalLinkIcon } from '@chakra-ui/icons'
+import { ChangeEvent } from 'react'
 import useMediasoupStore from '@/store/mediasoup'
 import { SelfMediaType } from '@/types'
 
@@ -26,9 +26,10 @@ interface Props {
 	publishAudio: (audioId?: string) => Promise<void>
 	publishVideo: (videoId?: string) => Promise<void>
 	closeMedia: (type: SelfMediaType, producerId: string) => void
+	leave: () => void
 }
 
-const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, closeMedia }: Props) => {
+const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, closeMedia, leave }: Props) => {
 	const [me, setMeAudioId, setMeVideoId] = useMediasoupStore(state => [
 		state.me,
 		state.setMeAudioId,
@@ -54,7 +55,7 @@ const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, clo
 	}
 
 	return (
-		<>
+		<div className="w-full flex justify-between">
 			<Menu>
 				<MenuButton
 					as={IconButton}
@@ -69,6 +70,12 @@ const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, clo
 					</MenuItem>
 				</MenuList>
 			</Menu>
+			<IconButton
+				aria-label="Leave"
+				icon={<ExternalLinkIcon color={'#fff'} fontSize={20} />}
+				variant="link"
+				onClick={leave}
+			/>
 			{/* 音视频控制 Modal */}
 			<Modal isOpen={isOpen} onClose={onClose}>
 				<ModalOverlay />
@@ -105,7 +112,7 @@ const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, clo
 					</ModalFooter>
 				</ModalContent>
 			</Modal>
-		</>
+		</div>
 	)
 }
 
