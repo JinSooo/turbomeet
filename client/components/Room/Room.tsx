@@ -5,9 +5,10 @@ import io, { Socket } from 'socket.io-client'
 import * as mediasoup from 'mediasoup-client'
 import { MediaType, SelfMediaType } from '@/types'
 import { Consumer, Producer, Transport } from 'mediasoup-client/lib/types'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 import useMediasoupStore from '@/store/mediasoup'
+import MediaMenu from './MediaMenu'
 
 export interface PeerInfo {
 	id: string
@@ -54,6 +55,8 @@ const Room = () => {
 		removeProducer,
 		addConsumer,
 		removeConsumer,
+		setMeAudioId,
+		setMeVideoId,
 	] = useMediasoupStore(state => [
 		state.me,
 		state.peers,
@@ -67,8 +70,12 @@ const Room = () => {
 		state.removeProducer,
 		state.addConsumer,
 		state.removeConsumer,
+		state.setMeAudioId,
+		state.setMeVideoId,
 	])
 	const toast = useToast({ position: 'bottom-right' })
+	const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
+	const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -76,6 +83,23 @@ const Room = () => {
 		const data = await socket.request('routerRtpCapabilities')
 		device = new mediasoup.Device()
 		await device.load({ routerRtpCapabilities: data.rtpCapabilities })
+	}
+	// 获取所有音视频设备
+	const getDevices = async () => {
+		const devices = await navigator.mediaDevices.enumerateDevices()
+		const audioInputArr = []
+		const videoInputArr = []
+
+		for (const device of devices) {
+			if (device.kind === 'audioinput') audioInputArr.push(device)
+			else if (device.kind === 'videoinput') videoInputArr.push(device)
+		}
+
+		setAudioDevices(audioInputArr)
+		setVideoDevices(videoInputArr)
+		// 设置音视频默认设备
+		setMeAudioId(audioInputArr?.[0].deviceId ?? '')
+		setMeVideoId(videoInputArr?.[0].deviceId ?? '')
 	}
 	// 创建Producer Transport
 	const createProducerTransport = async () => {
@@ -166,30 +190,40 @@ const Room = () => {
 		producers.set(producer.id.producerId, producer)
 	}
 	// 向服务器推音频流
-	const publishAudio = async () => {
+	const publishAudio = async (audioId?: string) => {
+		// 如果audioId不存在，使用默认值，即在getDevices获取的默认设备
 		const stream = await navigator.mediaDevices.getUserMedia({
 			audio: {
+				deviceId: audioId ?? me.audioId,
 				echoCancellation: true,
 				noiseSuppression: true,
 				autoGainControl: true,
 			},
-			video: false,
 		})
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 		savePublishMedia('audio', audioProducer)
 	}
 	// 向服务器推视频流
-	const publishVideo = async () => {
+	const publishVideo = async (videoId?: string) => {
+		// 如果videoId不存在，使用默认值，即在getDevices获取的默认设备
 		const stream = await navigator.mediaDevices.getUserMedia({
-			audio: false,
-			video: { aspectRatio: 16 / 9 },
+			video: {
+				deviceId: videoId ?? me.videoId,
+				aspectRatio: 16 / 9,
+			},
 		})
 		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 		savePublishMedia('video', videoProducer)
 	}
 	// 向服务器推共享屏幕
 	const publishShare = async () => {
-		const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+		let stream: MediaStream
+		try {
+			stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+		} catch (err) {
+			toast({ status: 'error', description: 'The device is not supported' })
+			return
+		}
 		const shareProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 		savePublishMedia('share', shareProducer)
 		// 监听屏幕共享关闭，点击特殊按钮时
@@ -199,7 +233,7 @@ const Room = () => {
 		}
 	}
 	// 关闭推流
-  const closeMedia = async (type: SelfMediaType, producerId: string) => {
+	const closeMedia = async (type: SelfMediaType, producerId: string) => {
 		// 用于防止共享屏幕的重复关闭
 		if (!producers.has(producerId)) return
 
@@ -255,8 +289,8 @@ const Room = () => {
 				track: consumer.track,
 			},
 		})
-    consumers.set(consumer.id, consumer)
-    ptc.set(producerId, consumer.id)
+		consumers.set(consumer.id, consumer)
+		ptc.set(producerId, consumer.id)
 
 		// 客户端接收到consumer之后，就可以通知服务器恢复了
 		await socket.request('resume', { consumerId: consumer.id })
@@ -281,19 +315,19 @@ const Room = () => {
 			const consumer = consumers.get(consumerId)!
 			consumer.close()
 		}
-  }
-  // 关闭Producer对应的Consumer
-  const userProducerClose = async (peerId: string, producerId: string) => {
-    const consumerId = ptc.get(producerId)!
-    const consumer = consumers.get(consumerId)!
+	}
+	// 关闭Producer对应的Consumer
+	const userProducerClose = async (peerId: string, producerId: string) => {
+		const consumerId = ptc.get(producerId)!
+		const consumer = consumers.get(consumerId)!
 
-    await socket.request('consumerClose', { consumerId })
-    consumer.close()
-    removePeerConsumer(peerId, consumerId)
-    removeConsumer(consumerId)
-    consumers.delete(consumerId)
-    ptc.delete(producerId)
-  }
+		await socket.request('consumerClose', { consumerId })
+		consumer.close()
+		removePeerConsumer(peerId, consumerId)
+		removeConsumer(consumerId)
+		consumers.delete(consumerId)
+		ptc.delete(producerId)
+	}
 
 	// 初始化WebSocket
 	const initWebSocket = () => {
@@ -305,6 +339,7 @@ const Room = () => {
 		})
 		socket.on('connect', async () => {
 			await loadDevice()
+			await getDevices()
 			await initTransport()
 			await publish(mediaType)
 			await synchronizePeers()
@@ -355,20 +390,31 @@ const Room = () => {
 	}, [])
 
 	return (
-		<div className="flex w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
-			<div className="flex-1">
-				<Exhibition
-					mediaType={mediaType}
-					me={me}
-					peers={peers}
+		<div className="flex flex-col w-full h-full bg-[url('/img/background.jpg')] bg-cover bg-no-repeat bg-center bg-fixed">
+			<div className="h-[40px] flex items-center">
+				<MediaMenu
+					audioDevices={audioDevices}
+					videoDevices={videoDevices}
 					publishAudio={publishAudio}
 					publishVideo={publishVideo}
-					publishShare={publishShare}
 					closeMedia={closeMedia}
 				/>
 			</div>
-			<div className="w-0 sm:w-72">
-				<Chat />
+			<div className="flex flex-1">
+				<div className="flex-1">
+					<Exhibition
+						mediaType={mediaType}
+						me={me}
+						peers={peers}
+						publishAudio={publishAudio}
+						publishVideo={publishVideo}
+						publishShare={publishShare}
+						closeMedia={closeMedia}
+					/>
+				</div>
+				<div className="w-0 sm:w-72">
+					<Chat />
+				</div>
 			</div>
 		</div>
 	)

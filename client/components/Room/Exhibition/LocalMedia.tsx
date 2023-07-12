@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 interface Props {
 	mediaType: MediaType
 	me: Me
-	publishAudio: () => Promise<void>
-	publishVideo: () => Promise<void>
+	publishAudio: (audioId?: string) => Promise<void>
+	publishVideo: (videoId?: string) => Promise<void>
 	publishShare: () => Promise<void>
 	closeMedia: (type: SelfMediaType, producerId: string) => void
 }

@@ -11,8 +11,8 @@ interface Props {
 	peers: {
 		[key: string]: Peer
 	}
-	publishAudio: () => Promise<void>
-	publishVideo: () => Promise<void>
+	publishAudio: (audioId?: string) => Promise<void>
+	publishVideo: (videoId?: string) => Promise<void>
 	publishShare: () => Promise<void>
 	closeMedia: (type: SelfMediaType, producerId: string) => void
 }

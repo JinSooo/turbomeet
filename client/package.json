@@ -10,6 +10,7 @@
     "dev:https": "local-ssl-proxy --key ./cert/localhost-key.pem --cert ./cert/localhost.pem --source 3001 --target 3000"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^2.0.19",
     "@chakra-ui/next-js": "^2.1.4",
     "@chakra-ui/react": "^2.7.1",
     "@emotion/react": "^11.11.1",

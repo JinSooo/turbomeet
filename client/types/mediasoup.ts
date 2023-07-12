@@ -4,6 +4,8 @@ export interface Me {
 	producers: {
 		[key: string]: string
 	}
+	audioId: string
+	videoId: string
 }
 
 export interface Peer {

@@ -16,6 +16,8 @@ interface State {
 
 interface Action {
 	setMeId: (id: Me['id']) => void
+	setMeAudioId: (audioId: Me['audioId']) => void
+	setMeVideoId: (videoId: Me['videoId']) => void
 	setMeUsername: (username: Me['username']) => void
 	setMeProducers: (producers: Me['producers']) => void
 	addMeProducer: (producerName: string, producerId: string) => void
@@ -41,12 +43,16 @@ const useMediasoupStore = create<State & Action>(set => ({
 			audio: '',
 			video: '',
 		},
+		audioId: '',
+		videoId: '',
 	},
 	peers: {},
 	producers: {},
 	consumers: {},
 
 	setMeId: id => set(state => ({ me: { ...state.me, id } })),
+	setMeAudioId: audioId => set(state => ({ me: { ...state.me, audioId } })),
+	setMeVideoId: videoId => set(state => ({ me: { ...state.me, videoId } })),
 	setMeUsername: username => set(state => ({ me: { ...state.me, username } })),
 	setMeProducers: producers => set(state => ({ me: { ...state.me, producers: producers } })),
 	addMeProducer: (producerName, producerId) =>
