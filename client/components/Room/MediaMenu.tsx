@@ -95,6 +95,7 @@ const MediaMenu = ({
 				width={250}
 				placeholder="Write here..."
 				color={'white'}
+				variant="unstyled"
 				value={message}
 				onChange={e => handleInputChange(e)}
 				onKeyDown={e => handleInputSubmit(e)}
