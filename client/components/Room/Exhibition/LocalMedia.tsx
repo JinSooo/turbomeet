@@ -60,7 +60,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 				// However it does not produce a visually useful output, so let exagerate
 				// it a bit. Also, let convert it from 0..1 to 0..10 and avoid value 1 to
 				// minimize component renderings.
-				let volume = Math.round(Math.pow(10, dBs / 85) * 10)
+				let volume = Math.round(Math.pow(10, dBs / 200) * 10)
 				if (volume === 1) volume = 0
 				if (volume !== audioVolume) setAudioVolume(volume)
 			})

@@ -324,7 +324,7 @@ const Room = ({ toLogin }: Props) => {
 	}
 	// 离开房间
 	const leave = () => {
-		leaveSelf()
+		// leaveSelf()
 		socket.disconnect()
 		socket.close()
 		toLogin()

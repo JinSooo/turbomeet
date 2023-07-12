@@ -18,6 +18,8 @@ const RemoteMedia = ({ peer }: Props) => {
 
 	// 监听变化再渲染
 	useEffect(() => {
+		// 重置
+		setAudioVolume(0)
 		if (audioRef.current && peer.consumers.audio) {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.audio].track!)
@@ -26,7 +28,7 @@ const RemoteMedia = ({ peer }: Props) => {
 			// 音频可视化
 			const audioEvents = hark(stream, { play: false })
 			audioEvents.on('volume_change', (dBs, threshold) => {
-				let volume = Math.round(Math.pow(10, dBs / 85) * 10)
+				let volume = Math.round(Math.pow(10, dBs / 200) * 10)
 				if (volume === 1) volume = 0
 				if (volume !== audioVolume) setAudioVolume(volume)
 			})
