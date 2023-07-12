@@ -329,6 +329,15 @@ const Room = ({ toLogin }: Props) => {
 		socket.close()
 		toLogin()
 	}
+	// 发送消息
+	const sendChatMessage = (message: string) => {
+		socket.emit('chatMessage', {
+			username: me.username,
+			type: 'text',
+			message: message,
+		})
+		toast({ status: 'success', description: 'send success' })
+	}
 
 	// 初始化WebSocket
 	const initWebSocket = () => {
@@ -374,6 +383,10 @@ const Room = ({ toLogin }: Props) => {
 			socket.on('newProducer', data => {
 				subscribe(data.peerId, data.producerId)
 			})
+			// 有新消息
+			socket.on('chatMessage', data => {
+				toast({ status: 'info', title: `User ${data.username} says:`, description: data.message })
+			})
 		})
 
 		// 直接加到socket源码里
@@ -399,6 +412,7 @@ const Room = ({ toLogin }: Props) => {
 					publishVideo={publishVideo}
 					closeMedia={closeMedia}
 					leave={leave}
+					sendChatMessage={sendChatMessage}
 				/>
 			</div>
 			<div className="flex flex-1">

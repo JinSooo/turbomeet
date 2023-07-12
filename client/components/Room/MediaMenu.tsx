@@ -14,9 +14,10 @@ import {
 	ModalFooter,
 	Button,
 	Select,
+	Input,
 } from '@chakra-ui/react'
 import { HamburgerIcon, SettingsIcon, ExternalLinkIcon } from '@chakra-ui/icons'
-import { ChangeEvent } from 'react'
+import { ChangeEvent, KeyboardEvent, useState } from 'react'
 import useMediasoupStore from '@/store/mediasoup'
 import { SelfMediaType } from '@/types'
 
@@ -27,15 +28,25 @@ interface Props {
 	publishVideo: (videoId?: string) => Promise<void>
 	closeMedia: (type: SelfMediaType, producerId: string) => void
 	leave: () => void
+	sendChatMessage: (message: string) => void
 }
 
-const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, closeMedia, leave }: Props) => {
+const MediaMenu = ({
+	audioDevices,
+	videoDevices,
+	publishAudio,
+	publishVideo,
+	closeMedia,
+	leave,
+	sendChatMessage,
+}: Props) => {
 	const [me, setMeAudioId, setMeVideoId] = useMediasoupStore(state => [
 		state.me,
 		state.setMeAudioId,
 		state.setMeVideoId,
 	])
 	const { isOpen, onOpen, onClose } = useDisclosure()
+	const [message, setMessage] = useState('')
 
 	const selectAudioDevice = (e: ChangeEvent<HTMLSelectElement>) => {
 		// 避免重复渲染
@@ -52,6 +63,16 @@ const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, clo
 		setMeVideoId(e.target.value)
 		closeMedia('video', me.producers.video)
 		publishVideo(e.target.value)
+	}
+	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+		setMessage(e.target.value)
+	}
+	const handleInputSubmit = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key !== 'Enter') return
+
+		e.preventDefault()
+		sendChatMessage(message.trim())
+		setMessage('')
 	}
 
 	return (
@@ -70,6 +91,14 @@ const MediaMenu = ({ audioDevices, videoDevices, publishAudio, publishVideo, clo
 					</MenuItem>
 				</MenuList>
 			</Menu>
+			<Input
+				width={250}
+				placeholder="Write here..."
+				color={'white'}
+				value={message}
+				onChange={e => handleInputChange(e)}
+				onKeyDown={e => handleInputSubmit(e)}
+			/>
 			<IconButton
 				aria-label="Leave"
 				icon={<ExternalLinkIcon color={'#fff'} fontSize={20} />}

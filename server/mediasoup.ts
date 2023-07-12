@@ -151,6 +151,16 @@ export const createProducer = async (transport: Transport<TransportAppData>, dat
 	return producer
 }
 
+export const createProducerData = async (transport: Transport<TransportAppData>, data: any) => {
+	const producerData = await transport.produceData<ProducerAppData>({
+		label: data.label,
+		protocol: data.protocol,
+		sctpStreamParameters: data.sctpStreamParameters,
+	})
+
+	return producerData
+}
+
 export const createConsumer = async (
 	router: Router<RouterAppData>,
 	transport: Transport<TransportAppData>,
@@ -169,4 +179,12 @@ export const createConsumer = async (
 	}
 
 	return consumer
+}
+
+export const createConsumerData = async (transport: Transport<TransportAppData>, dataProducerId: string) => {
+	const consumerData = await transport.consumeData<ConsumerAppData>({
+		dataProducerId: dataProducerId,
+	})
+
+	return consumerData
 }

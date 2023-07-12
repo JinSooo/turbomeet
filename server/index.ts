@@ -188,6 +188,10 @@ io.on('connection', async socket => {
 
 		callback()
 	})
+
+	socket.on('chatMessage', data => {
+		socket.to(socket.data.roomId).emit('chatMessage', data)
+	})
 })
 
 /**
