@@ -5,7 +5,9 @@
 	"main": "index.ts",
 	"type": "module",
 	"scripts": {
-		"dev": "ts-node index.ts"
+		"dev": "ts-node index.ts",
+		"build": "tsc",
+		"start": "node ./index.js"
 	},
 	"keywords": [],
 	"author": "",

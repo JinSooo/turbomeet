@@ -23,15 +23,7 @@ const Login = ({ login }: Props) => {
 	const [setMeId, setMeUsername] = useMediasoupStore(state => [state.setMeId, state.setMeUsername])
 	const toast = useToast({ position: 'bottom-right' })
 	const [mediaType, setMediaType] = useState(MediaType.ALL)
-  const [roomId, setRoomId] = useState(() => {
-		// RoomId已经存在，则读取
-		if (window.location.search) {
-			const existRoomId = window.location.search.split('=')[1]
-			window.history.pushState(null, '', '?roomId=' + existRoomId)
-			return existRoomId
-		}
-		return initialRoomId
-	})
+  const [roomId, setRoomId] = useState('')
 	const [username, setUsername] = useState('')
 
 	// 修改Media状态
@@ -51,7 +43,14 @@ const Login = ({ login }: Props) => {
 	}
 
 	useEffect(() => {
-		window.history.pushState(null, '', '?roomId=' + roomId)
+		// RoomId已经存在，则读取
+		if (window.location.search) {
+			const existRoomId = window.location.search.split('=')[1]
+			setRoomId(existRoomId)
+		} else {
+			setRoomId(initialRoomId)
+			window.history.pushState(null, '', '?roomId=' + initialRoomId)
+		}
 	}, [])
 
 	return (
