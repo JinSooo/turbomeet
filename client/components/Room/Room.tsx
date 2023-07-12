@@ -41,6 +41,7 @@ const Room = ({ toLogin }: Props) => {
 		removeConsumer,
 		setMeAudioId,
 		setMeVideoId,
+		reset,
 	] = useMediasoupStore(state => [
 		state.me,
 		state.peers,
@@ -56,6 +57,7 @@ const Room = ({ toLogin }: Props) => {
 		state.removeConsumer,
 		state.setMeAudioId,
 		state.setMeVideoId,
+		state.reset,
 	])
 	const toast = useToast({ position: 'bottom-right' })
 	const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
@@ -163,6 +165,7 @@ const Room = ({ toLogin }: Props) => {
 	}
 	// 保存Producer信息到全局上
 	const savePublishMedia = (type: SelfMediaType, producer: Producer) => {
+		producers.set(producer.id.producerId, producer)
 		addMeProducer(type, producer.id.producerId)
 		addProducer({
 			[producer.id.producerId]: {
@@ -171,7 +174,6 @@ const Room = ({ toLogin }: Props) => {
 				paused: producer.paused,
 			},
 		})
-		producers.set(producer.id.producerId, producer)
 	}
 	// 向服务器推音频流
 	const publishAudio = async (audioId?: string) => {
@@ -313,18 +315,20 @@ const Room = ({ toLogin }: Props) => {
 		ptc.delete(producerId)
 	}
 	const leaveSelf = () => {
-		producers.forEach(producer => {
-			producer.close()
+		producers?.forEach(producer => {
+			producer?.close()
 		})
-		consumers.forEach(consumer => {
-			consumer.close()
+		consumers?.forEach(consumer => {
+			consumer?.close()
 		})
-		producerTransport.close()
-		consumerTransport.close()
+		producerTransport?.close()
+		consumerTransport?.close()
 	}
 	// 离开房间
 	const leave = () => {
-		// leaveSelf()
+		// 重置全局Store
+		reset()
+		leaveSelf()
 		socket.disconnect()
 		socket.close()
 		toLogin()

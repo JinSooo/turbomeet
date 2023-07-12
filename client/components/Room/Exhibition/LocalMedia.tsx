@@ -47,7 +47,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 
 	// 监听变化再渲染
 	useEffect(() => {
-		if (audioRef.current && me.producers.audio) {
+		if (audioRef.current && me.producers.audio && producers[me.producers.audio]) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.audio].track!)
 			audioRef.current.srcObject = stream
@@ -67,7 +67,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 		}
 	}, [me.producers.audio])
 	useEffect(() => {
-		if (videoRef.current && me.producers.video) {
+		if (videoRef.current && me.producers.video && producers[me.producers.video]) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.video].track!)
 			videoRef.current.srcObject = stream

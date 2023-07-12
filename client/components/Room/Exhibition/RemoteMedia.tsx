@@ -20,7 +20,7 @@ const RemoteMedia = ({ peer }: Props) => {
 	useEffect(() => {
 		// 重置
 		setAudioVolume(0)
-		if (audioRef.current && peer.consumers.audio) {
+		if (audioRef.current && peer.consumers.audio && consumers[peer.consumers.audio]) {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.audio].track!)
 			audioRef.current.srcObject = stream
@@ -35,7 +35,7 @@ const RemoteMedia = ({ peer }: Props) => {
 		}
 	}, [peer.consumers.audio])
 	useEffect(() => {
-		if (videoRef.current && peer.consumers.video) {
+		if (videoRef.current && peer.consumers.video && consumers[peer.consumers.video]) {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.video].track!)
 			videoRef.current.srcObject = stream

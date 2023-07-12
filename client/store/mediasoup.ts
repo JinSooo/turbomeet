@@ -33,9 +33,10 @@ interface Action {
 	setConsumers: (consumers: State['consumers']) => void
 	addConsumer: (producer: State['consumers']) => void
 	removeConsumer: (consumerId: string) => void
+	reset: () => void
 }
 
-const useMediasoupStore = create<State & Action>(set => ({
+const initialState = {
 	me: {
 		id: '',
 		username: '',
@@ -49,6 +50,10 @@ const useMediasoupStore = create<State & Action>(set => ({
 	peers: {},
 	producers: {},
 	consumers: {},
+}
+
+const useMediasoupStore = create<State & Action>(set => ({
+	...initialState,
 
 	setMeId: id => set(state => ({ me: { ...state.me, id } })),
 	setMeAudioId: audioId => set(state => ({ me: { ...state.me, audioId } })),
@@ -108,6 +113,8 @@ const useMediasoupStore = create<State & Action>(set => ({
 			delete state.consumers[consumerId]
 			return { consumers: { ...state.consumers } }
 		}),
+
+	reset: () => set(initialState),
 }))
 
 export default useMediasoupStore
