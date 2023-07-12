@@ -19,6 +19,9 @@ importers:
       '@emotion/styled':
         specifier: ^11.11.0
         version: 11.11.0(@emotion/react@11.11.1)(@types/react@18.2.14)(react@18.2.0)
+      '@types/hark':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@types/node':
         specifier: 20.4.0
         version: 20.4.0
@@ -40,6 +43,9 @@ importers:
       framer-motion:
         specifier: ^10.12.18
         version: 10.12.18(react-dom@18.2.0)(react@18.2.0)
+      hark:
+        specifier: ^1.2.3
+        version: 1.2.3
       local-ssl-proxy:
         specifier: ^2.0.5
         version: 2.0.5
@@ -1661,6 +1667,10 @@ packages:
       '@types/ms': 0.7.31
     dev: false
 
+  /@types/hark@1.2.2:
+    resolution: {integrity: sha512-s9/zQ+qlwXzKOkVzqsFecZObo9tVAGf870L43tf7GlE/9RQ7zb9hC0cWgIu4Nj5o4/ahIAIbO0bVIiMbRyVbsw==}
+    dev: false
+
   /@types/json5@0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
     dev: false
@@ -3223,6 +3233,12 @@ packages:
       debug: 4.3.4(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /hark@1.2.3:
+    resolution: {integrity: sha512-u68vz9SCa38ESiFJSDjqK8XbXqWzyot7Cj6Y2b6jk2NJ+II3MY2dIrLMg/kjtIAun4Y1DHF/20hfx4rq1G5GMg==}
+    dependencies:
+      wildemitter: 1.2.1
     dev: false
 
   /has-bigints@1.0.2:
@@ -5019,6 +5035,10 @@ packages:
     hasBin: true
     dependencies:
       isexe: 2.0.0
+    dev: false
+
+  /wildemitter@1.2.1:
+    resolution: {integrity: sha512-UMmSUoIQSir+XbBpTxOTS53uJ8s/lVhADCkEbhfRjUGFDPme/XGOb0sBWLx5sTz7Wx/2+TlAw1eK9O5lw5PiEw==}
     dev: false
 
   /wrappy@1.0.2:

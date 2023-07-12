@@ -1,7 +1,8 @@
 import useMediasoupStore from '@/store/mediasoup'
 import { Peer } from '@/types'
+import hark from 'hark'
 import Image from 'next/image'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
 	peer: Peer
@@ -10,7 +11,8 @@ interface Props {
 const RemoteMedia = ({ peer }: Props) => {
 	const consumers = useMediasoupStore(state => state.consumers)
 	const videoRef = useRef<HTMLVideoElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
+	const audioRef = useRef<HTMLAudioElement>(null)
+	const [audioVolume, setAudioVolume] = useState(0)
 	const audioEnabled = peer.consumers.audio
 	const videoEnabled = peer.consumers.video
 
@@ -20,6 +22,14 @@ const RemoteMedia = ({ peer }: Props) => {
 			const stream = new MediaStream()
 			stream.addTrack(consumers[peer.consumers.audio].track!)
 			audioRef.current.srcObject = stream
+
+			// 音频可视化
+			const audioEvents = hark(stream, { play: false })
+			audioEvents.on('volume_change', (dBs, threshold) => {
+				let volume = Math.round(Math.pow(10, dBs / 85) * 10)
+				if (volume === 1) volume = 0
+				if (volume !== audioVolume) setAudioVolume(volume)
+			})
 		}
 	}, [peer.consumers.audio])
 	useEffect(() => {
@@ -58,6 +68,10 @@ const RemoteMedia = ({ peer }: Props) => {
 			<div className="absolute top-2 right-2 select-none flex gap-2">
 				{!audioEnabled && <Image src={'/img/audio_forbid.svg'} alt="audio" width={18} height={18} />}
 				{!videoEnabled && <Image src={'/img/video_forbid.svg'} alt="audio" width={18} height={18} />}
+			</div>
+			{/* 音量可视化 */}
+			<div className="absolute top-0 right-0 z-50 h-full flex items-center">
+				<div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>
 			</div>
 		</div>
 	)

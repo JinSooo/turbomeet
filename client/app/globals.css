@@ -15,3 +15,37 @@ html,
 body {
 	height: 100vh;
 }
+
+.level0 {
+  height: 0%;
+}
+.level1 {
+  height: 10%;
+}
+.level2 {
+  height: 20%;
+}
+.level3 {
+  height: 30%;
+}
+.level4 {
+  height: 40%;
+}
+.level5 {
+  height: 50%;
+}
+.level6 {
+  height: 60%;
+}
+.level7 {
+  height: 70%;
+}
+.level8 {
+  height: 80%;
+}
+.level9 {
+  height: 90%;
+}
+.level10 {
+  height: 100%;
+}

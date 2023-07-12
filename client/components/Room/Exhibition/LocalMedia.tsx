@@ -3,6 +3,7 @@ import { Me, MediaType, SelfMediaType } from '@/types'
 import { Button } from '@chakra-ui/react'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
+import hark from 'hark'
 
 interface Props {
 	mediaType: MediaType
@@ -19,7 +20,8 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 	const audioRef = useRef<HTMLAudioElement>(null)
 	const [hasAudio, setHasAudio] = useState(mediaType === MediaType.AUDIO || mediaType === MediaType.ALL)
 	const [hasVideo, setHasVideo] = useState(mediaType === MediaType.VIDEO || mediaType === MediaType.ALL)
-  const [hasShare, setHasShare] = useState(false)
+	const [hasShare, setHasShare] = useState(false)
+	const [audioVolume, setAudioVolume] = useState(0)
 	const videoEnabled = !!me.producers.video
 	const styles = {
 		audioColorScheme: hasAudio ? 'teal' : 'gray',
@@ -49,6 +51,19 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.audio].track!)
 			audioRef.current.srcObject = stream
+
+			// 音频可视化
+			const audioEvents = hark(stream, { play: false })
+			audioEvents.on('volume_change', (dBs, threshold) => {
+				// The exact formula to convert from dBs (-100..0) to linear (0..1) is:
+				//   Math.pow(10, dBs / 20)
+				// However it does not produce a visually useful output, so let exagerate
+				// it a bit. Also, let convert it from 0..1 to 0..10 and avoid value 1 to
+				// minimize component renderings.
+				let volume = Math.round(Math.pow(10, dBs / 85) * 10)
+				if (volume === 1) volume = 0
+				if (volume !== audioVolume) setAudioVolume(volume)
+			})
 		}
 	}, [me.producers.audio])
 	useEffect(() => {
@@ -111,6 +126,10 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 			{/* 用户名 */}
 			<div className="absolute bottom-2 left-2 bg-[#252525] text-white border-b-2 border-b-[#aeff00] select-none text-sm p-[4.8px] z-50">
 				<p>{me.username}</p>
+			</div>
+			{/* 音量可视化 */}
+			<div className="absolute top-0 right-0 z-50 h-full flex items-center">
+				<div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>
 			</div>
 		</div>
 	)
