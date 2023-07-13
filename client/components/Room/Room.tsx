@@ -178,26 +178,39 @@ const Room = ({ toLogin }: Props) => {
 	// 向服务器推音频流
 	const publishAudio = async (audioId?: string) => {
 		// 如果audioId不存在，使用默认值，即在getDevices获取的默认设备
-		const stream = await navigator.mediaDevices.getUserMedia({
-			audio: {
-				deviceId: audioId ?? me.audioId,
-				echoCancellation: true,
-				noiseSuppression: true,
-				autoGainControl: true,
-			},
-		})
+
+		let stream
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					deviceId: audioId ?? me.audioId,
+					echoCancellation: true,
+					noiseSuppression: true,
+					autoGainControl: true,
+				},
+			})
+		} catch (err) {
+			toast({ status: 'error', description: 'The device does not support audio' })
+			return
+		}
 		const audioProducer = await producerTransport.produce({ track: stream.getAudioTracks()[0] })
 		savePublishMedia('audio', audioProducer)
 	}
 	// 向服务器推视频流
 	const publishVideo = async (videoId?: string) => {
 		// 如果videoId不存在，使用默认值，即在getDevices获取的默认设备
-		const stream = await navigator.mediaDevices.getUserMedia({
-			video: {
-				deviceId: videoId ?? me.videoId,
-				aspectRatio: 16 / 9,
-			},
-		})
+		let stream
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({
+				video: {
+					deviceId: videoId ?? me.videoId,
+					aspectRatio: 16 / 9,
+				},
+			})
+		} catch (err) {
+			toast({ status: 'error', description: 'The device does not support video' })
+			return
+		}
 		const videoProducer = await producerTransport.produce({ track: stream.getVideoTracks()[0] })
 		savePublishMedia('video', videoProducer)
 	}
