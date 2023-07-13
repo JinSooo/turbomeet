@@ -1,10 +1,10 @@
 # TurboMeet
 
-一个基于 WebRTC 实现的视频会议的全栈项目，支持音频，视频，共享屏幕，消息发送的方式来进行交互。同时项目是基于TypeScript的全栈开发，并使用 pnpm monorepo 进行项目管理
+一个基于 WebRTC 实现的视频会议的全栈开发项目，支持音频，视频，共享屏幕，消息发送的方式来进行交互。同时项目是基于TypeScript的全栈开发，并使用 pnpm monorepo 进行项目管理
 
 ## 技术栈
 
-client端
+客户端
 
 - NextJS
 - ReactJS
@@ -12,62 +12,37 @@ client端
 - Chakra UI
 - Zustand
 
-Server 端
+服务器端
 
 - Fastify
 - Socket.io
 - Mediasoup
 
-## 效果展示
+## 功能
 
 ### 登录界面
 
 可以按自己的喜好去选择音视频
 
-页面展示
-
-![login](./public/img/login.png "登录界面")
-
 ### 会议房间
 
-本地端
+本地
 
 - 控制音视频的开关
 - 共享屏幕
 - 音频可视化
 - 自定义切换音视频设备
 
-远程端
+远程
 
 - 查看音视频是否打开
 - 音频可视化
 
 简易的消息通信
 
-页面展示
-
-桌面端
-
-![1](./public/img/1.png "桌面端")
-
-移动端
-
-![1](./public/img/2.jpg "移动端")
-
-屏幕共享
-![Alt text](./public/img/3.png)
-
-自定义音视频设备
-
-![Alt text](./public/img/4.png)
-
-消息发送
-
-![Alt text](./public/img/5.png)
-
 ## 项目启动
 
-首先拉取[源代码](https://github.com/JinSooo/turbomeet)，完成后，在目录内执行
+首先拉取[源代码](https://github.com/JinSooo/turbomeet)，完成后，进入目录并执行
 
 ```bash
 pnpm install
@@ -146,3 +121,31 @@ Mediasoup 是推出时间不长的 WebRTC 流媒体服务器开源库，其地�
 Mediasoup 把每个实例称为一个 Worker，在 Worker 内部有多个 Router，每个 Router 相当于一个房间。在每个房间里可以有多个用户或称为参与人，每个参与人在 Mediasoup 中由一个 Transport 代理。换句话说，对于房间（Router）来说，Transport 就相当于一个用户。
 
 更加详细的使用可以去看看我写的一篇[文章](https://jinso.top/article/streaming-mediasoup-use)
+
+## 页面展示
+
+### 登录界面
+
+![login](./public/img/login.png "登录界面")
+
+### 会议房间
+
+桌面端
+
+![1](./public/img/1.png "桌面端")
+
+移动端
+
+![1](./public/img/2.jpg "移动端")
+
+屏幕共享
+
+![Alt text](./public/img/3.png)
+
+自定义音视频设备
+
+![Alt text](./public/img/4.png)
+
+消息发送
+
+![Alt text](./public/img/5.png)

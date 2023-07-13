@@ -94,7 +94,6 @@ export const initMediasoup = async () => {
 					worker.appData.consumers.set(consumer.id, consumer)
 
 					consumer.observer.on('close', () => {
-						console.log('close consumer', consumer.id)
 						transport.appData.consumers.delete(consumer.id)
 						router.appData.consumers.delete(consumer.id)
 						worker.appData.consumers.delete(consumer.id)
