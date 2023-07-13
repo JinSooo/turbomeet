@@ -170,8 +170,8 @@ io.on('connection', async socket => {
 
 	// 客户端关闭对应的Producer
 	socket.on('producerClose', async (data, callback) => {
-		const producer = worker.appData.producers.get(data.producerId)!
-		producer.close()
+		const producer = worker.appData.producers.get(data.producerId)
+		producer?.close()
 
 		const peer = peers.get(socket.data.peerId)!
 		peer.producers = peer.producers.filter(val => val !== data.producerId)

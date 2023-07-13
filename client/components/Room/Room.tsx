@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 import useMediasoupStore from '@/store/mediasoup'
 import MediaMenu from './MediaMenu'
+import config from '@/config'
 
 interface Props {
 	toLogin: () => void
@@ -61,7 +62,7 @@ const Room = ({ toLogin }: Props) => {
 	])
 	const toast = useToast({ position: 'bottom-right' })
 	const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
+	const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -353,7 +354,7 @@ const Room = ({ toLogin }: Props) => {
 
 	// 初始化WebSocket
 	const initWebSocket = () => {
-		socket = io('https://192.168.1.12:8080/', {
+		socket = io(config.socketIp, {
 			query: {
 				roomId,
 				peerId: me.id,
