@@ -4,9 +4,9 @@ import { Button } from '@chakra-ui/react'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import hark from 'hark'
+import useUserStore from '@/store/user'
 
 interface Props {
-	mediaType: MediaType
 	me: Me
 	publishAudio: (audioId?: string) => Promise<void>
 	publishVideo: (videoId?: string) => Promise<void>
@@ -14,7 +14,9 @@ interface Props {
 	closeMedia: (type: SelfMediaType, producerId: string) => void
 }
 
-const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
+const LocalMedia = ({ me, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
+	console.log(me)
+	const mediaType = useUserStore(state => state.mediaType)
 	const producers = useMediasoupStore(state => state.producers)
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const audioRef = useRef<HTMLAudioElement>(null)
@@ -47,6 +49,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 
 	// 监听变化再渲染
 	useEffect(() => {
+		setHasAudio(!!me.producers.audio)
 		if (audioRef.current && me.producers.audio && producers[me.producers.audio]) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.audio].track!)
@@ -67,6 +70,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 		}
 	}, [me.producers.audio])
 	useEffect(() => {
+		setHasVideo(!!me.producers.video)
 		if (videoRef.current && me.producers.video && producers[me.producers.video]) {
 			const stream = new MediaStream()
 			stream.addTrack(producers[me.producers.video].track!)
@@ -74,12 +78,6 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 		}
 	}, [me.producers.video])
 	// 当点击特殊按钮关闭时，异步同步按钮状态
-	useEffect(() => {
-		setHasAudio(!!me.producers.audio)
-	}, [me.producers.audio])
-	useEffect(() => {
-		setHasVideo(!!me.producers.video)
-	}, [me.producers.video])
 	useEffect(() => {
 		setHasShare(!!me.producers.share)
 	}, [me.producers.share])
@@ -129,7 +127,7 @@ const LocalMedia = ({ mediaType, me, publishAudio, publishVideo, publishShare, c
 			</div>
 			{/* 音量可视化 */}
 			<div className="absolute top-0 right-0 z-50 h-full flex items-center">
-				<div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>
+				{me.producers.audio && <div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>}
 			</div>
 		</div>
 	)

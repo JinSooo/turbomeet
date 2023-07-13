@@ -114,7 +114,21 @@ const useMediasoupStore = create<State & Action>(set => ({
 			return { consumers: { ...state.consumers } }
 		}),
 
-	reset: () => set(initialState),
+	reset: () =>
+		set({
+			...initialState,
+			// 嵌套对象的原因，导致直接用initialState无法reset
+			me: {
+				id: '',
+				username: '',
+				producers: {
+					audio: '',
+					video: '',
+				},
+				audioId: '',
+				videoId: '',
+			},
+		}),
 }))
 
 export default useMediasoupStore

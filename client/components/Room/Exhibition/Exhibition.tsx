@@ -6,7 +6,6 @@ import RemoteShareMedia from './RemoteShareMedia'
 import { Fragment } from 'react'
 
 interface Props {
-	mediaType: MediaType
 	me: Me
 	peers: {
 		[key: string]: Peer
@@ -17,12 +16,11 @@ interface Props {
 	closeMedia: (type: SelfMediaType, producerId: string) => void
 }
 
-const Exhibition = ({ mediaType, me, peers, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
+const Exhibition = ({ me, peers, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
 	return (
 		<div className="flex justify-center content-start flex-wrap gap-8 w-full h-full box-border py-8">
 			{/* 本地端 */}
 			<LocalMedia
-				mediaType={mediaType}
 				me={me}
 				publishAudio={publishAudio}
 				publishVideo={publishVideo}

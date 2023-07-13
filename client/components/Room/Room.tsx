@@ -61,7 +61,7 @@ const Room = ({ toLogin }: Props) => {
 	])
 	const toast = useToast({ position: 'bottom-right' })
 	const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
-	const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
 
 	// 获取并加载device支持RTP类型
 	const loadDevice = async () => {
@@ -314,21 +314,16 @@ const Room = ({ toLogin }: Props) => {
 		consumers.delete(consumerId)
 		ptc.delete(producerId)
 	}
-	const leaveSelf = () => {
-		producers?.forEach(producer => {
-			producer?.close()
-		})
-		consumers?.forEach(consumer => {
-			consumer?.close()
-		})
-		producerTransport?.close()
-		consumerTransport?.close()
-	}
 	// 离开房间
-	const leave = () => {
+	const leave = async () => {
+		await socket.request('transportClose', { transportId: producerTransport.id })
+		await socket.request('transportClose', { transportId: consumerTransport.id })
+		// Closes the transport, including all its producers and consumers.
+		producerTransport.close()
+		consumerTransport.close()
+
 		// 重置全局Store
 		reset()
-		leaveSelf()
 		socket.disconnect()
 		socket.close()
 		toLogin()
@@ -364,7 +359,8 @@ const Room = ({ toLogin }: Props) => {
 					socket.connect()
 				} else {
 					toast({ status: 'error', description: 'You are disconnected' })
-					leaveSelf()
+					producerTransport.close()
+					consumerTransport.close()
 				}
 			})
 			socket.on('error', async data => {
@@ -422,7 +418,6 @@ const Room = ({ toLogin }: Props) => {
 			<div className="flex flex-1">
 				<div className="flex-1">
 					<Exhibition
-						mediaType={mediaType}
 						me={me}
 						peers={peers}
 						publishAudio={publishAudio}

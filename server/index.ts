@@ -29,6 +29,7 @@ interface Peer {
 	id: string
 	roomId: string
 	socket: Socket
+	transports: string[]
 	producers: string[] // 存放对应peer的producer
 	consumers: string[] // 存放对应peer的consumer
 }
@@ -68,6 +69,8 @@ io.on('connection', async socket => {
 	socket.on('disconnect', async () => {
 		await leaveRoom(socket)
 	})
+
+	// 用于client同步其他Peer的音视频信息
 	socket.on('synchronizePeers', (data, callback) => {
 		// 同步房间内其他用户信息
 		const roomPeers = synchronizePeers(data.roomId)
@@ -97,6 +100,9 @@ io.on('connection', async socket => {
 				const connTransport = router.appData.transports.get(data.transportId)!
 				connTransport.connect({ dtlsParameters: data.dtlsParameters })
 				callback()
+
+				const peer = peers.get(socket.data.peerId)!
+				peer.transports.push(connTransport.id)
 				break
 		}
 	})
@@ -142,7 +148,7 @@ io.on('connection', async socket => {
 		})
 	})
 
-	// 播放video
+	// 恢复播放video(一开始默认是pause)
 	socket.on('resume', async (data, callback) => {
 		const consumer = worker.appData.consumers.get(data.consumerId)!
 		await consumer.resume()
@@ -188,6 +194,22 @@ io.on('connection', async socket => {
 
 		callback()
 	})
+	// 客户端关闭对应的Transport
+	socket.on('transportClose', async (data, callback) => {
+		/**
+		 * BUG: leaveRoom的时候，Peer的Producer关闭后，似乎所有对应的Consumer会自动关闭
+		 * 我这边现在是无法关闭的，因为consumer已经关闭没了
+		 */
+		const transport = worker.appData.transports.get(data.transportId)
+		transport?.close()
+
+		// 关闭Transport说明用户离开房间了，但离开房间的逻辑处理放在了disconnected事件上，这边就不处理了
+
+		callback()
+
+		const peer = peers.get(socket.data.peerId)!
+		peer.transports = peer.transports.filter(transportId => transportId !== data.transportId)
+	})
 
 	socket.on('chatMessage', data => {
 		socket.to(socket.data.roomId).emit('chatMessage', data)
@@ -219,6 +241,7 @@ const joinRoom = async (socket: Socket) => {
 		roomId,
 		socket,
 		id: peerId,
+		transports: [],
 		producers: [],
 		consumers: [],
 	}
@@ -240,14 +263,22 @@ const leaveRoom = async (socket: Socket) => {
 	const room = rooms.get(roomId)!
 	const peer = peers.get(peerId)!
 
+	/**
+	 * 当关闭Producer或Consumer对应的Transport时，Transport内部的Producer和Consumer都会被自动关闭
+	 */
 	// 删除Peer对应的Media连接
-	for (const producerId of peer.producers) {
-		const producer = room.router.appData.producers.get(producerId)!
-		producer.close()
-	}
-	for (const consumerId of peer.consumers) {
-		const consumer = room.router.appData.consumers.get(consumerId)
-		consumer?.close()
+	// for (const producerId of peer.producers) {
+	// 	const producer = room.router.appData.producers.get(producerId)
+	// 	producer?.close()
+	// }
+	// for (const consumerId of peer.consumers) {
+	// 	const consumer = room.router.appData.consumers.get(consumerId)
+	// 	consumer?.close()
+	// }
+	// Closes the transport, including all its producers and consumers.
+	for (const transportId of peer.transports) {
+		const transport = room.router.appData.transports.get(transportId)
+		transport?.close()
 	}
 
 	const peerIndex = room.peers.findIndex(val => val === peerId)
@@ -266,11 +297,6 @@ const leaveRoom = async (socket: Socket) => {
 
 	socket.to(roomId).emit('userLeave', { peerId })
 }
-
-/**
- * 将peer与mediasoup建立Transport连接，包括Producer和Consumer
- */
-const connectTransport = (router: Router<RouterAppData>) => {}
 
 /**
  * 获取或创建房间

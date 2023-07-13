@@ -19,9 +19,9 @@ const RemoteShareMedia = ({ peer }: Props) => {
 	}, [peer.consumers.share])
 
 	return (
-		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg">
+		<div className="relative bg-[rgba(49,49,49,0.9)] hover:shadow-[0_0_8px_rgba(82,168,236,0.9)] rounded-lg w-full h-[274.5px] sm:w-[488px]">
 			{/* 音视频 */}
-			<div className="flex justify-center items-end w-[488px] h-[274.5px] select-none">
+			<div className="flex justify-center items-end w-full h-full select-none">
 				<video ref={videoRef} playsInline autoPlay className="h-full object-fill" muted />
 			</div>
 			{/* 用户名 */}

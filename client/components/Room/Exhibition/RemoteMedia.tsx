@@ -73,7 +73,9 @@ const RemoteMedia = ({ peer }: Props) => {
 			</div>
 			{/* 音量可视化 */}
 			<div className="absolute top-0 right-0 z-50 h-full flex items-center">
-				<div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>
+				{peer.consumers.audio && (
+					<div className={`w-1 rounded-md bg-yellow-200 duration-300 level${audioVolume}`}></div>
+				)}
 			</div>
 		</div>
 	)
