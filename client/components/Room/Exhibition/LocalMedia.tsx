@@ -15,7 +15,6 @@ interface Props {
 }
 
 const LocalMedia = ({ me, publishAudio, publishVideo, publishShare, closeMedia }: Props) => {
-	console.log(me)
 	const mediaType = useUserStore(state => state.mediaType)
 	const producers = useMediasoupStore(state => state.producers)
 	const videoRef = useRef<HTMLVideoElement>(null)
