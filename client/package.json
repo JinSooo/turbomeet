@@ -27,6 +27,7 @@
 		"local-ssl-proxy": "^2.0.5",
 		"mediasoup-client": "^3.6.93",
 		"next": "13.4.9",
+		"next-pwa": "^5.6.0",
 		"postcss": "8.4.25",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",
